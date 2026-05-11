@@ -1,58 +1,207 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Jigila Backend API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API backend for the Jigila vehicle import and shipping platform. Built with Laravel 13, Laravel Sanctum, and SQLite.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Framework**: Laravel 13.7
+- **Auth**: Laravel Sanctum (API token)
+- **Database**: SQLite (dev) — swap `DB_CONNECTION` for PostgreSQL/MySQL in production
+- **Architecture**: Controllers → Services → Eloquent Models, with Form Requests for validation and API Resources for response shaping
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+
+- Composer
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Getting Started
 
 ```bash
-composer require laravel/boost --dev
+git clone <repo-url>
+cd jigila_backend
 
-php artisan boost:install
+composer install
+
+cp .env.example .env
+php artisan key:generate
+
+touch database/database.sqlite
+php artisan migrate
+
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The API will be available at `http://127.0.0.1:8000/api`.
 
-## Contributing
+## Environment Variables
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_ENV` | Application environment | `local` |
+| `APP_KEY` | Encryption key (auto-generated) | — |
+| `DB_CONNECTION` | Database driver | `sqlite` |
+| `DB_DATABASE` | Database path / name | `database/database.sqlite` |
+| `MAIL_MAILER` | Mail driver | `log` (dev) |
 
-## Code of Conduct
+## API Reference
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Base URL: `/api`
 
-## Security Vulnerabilities
+### Authentication
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/auth/register` | Public | Create a new user account |
+| `POST` | `/auth/login` | Public | Login and receive a bearer token |
+| `POST` | `/auth/logout` | Bearer token | Revoke the current token |
+| `POST` | `/auth/forgot-password` | Public | Request a 6-digit OTP |
+| `POST` | `/auth/verify-otp` | Public | Verify the OTP |
+| `POST` | `/auth/reset-password` | Public | Set a new password using the OTP |
 
-## License
+### Profile
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/profile` | Bearer token | Get the authenticated user's profile |
+| `PUT` | `/profile` | Bearer token | Update name, email, phone, or password |
+
+### Orders
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/orders` | Bearer token | List orders (own orders for users, all for admins) |
+| `POST` | `/orders` | Bearer token | Create a new vehicle order |
+| `GET` | `/orders/{id}` | Bearer token | Get a single order |
+| `PUT` | `/orders/{id}` | Bearer token | Update an order |
+| `DELETE` | `/orders/{id}` | Bearer token | Delete an order |
+
+### Admin
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/admin/dashboard` | Bearer token + admin role | Platform stats and recent orders |
+
+### Example: Register
+
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "08012345678",
+  "password": "secret123",
+  "password_confirmation": "secret123"
+}
+```
+
+### Example: Login
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "secret123"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "1|abc123...",
+  "user": {
+    "id": "1",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "08012345678",
+    "role": "user"
+  }
+}
+```
+
+All subsequent authenticated requests must include:
+
+```
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+### Example: Create Order
+
+```http
+POST /api/orders
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "vin": "1HGCM82633A004352",
+  "auction_source": "Copart",
+  "condition": "Runner",
+  "already_purchased": false,
+  "bid_price": "7500",
+  "services": ["trucking", "shipping"]
+}
+```
+
+## Order Fields
+
+| Field | Type | Values |
+|-------|------|--------|
+| `auction_source` | string | `Copart`, `IAAI`, `Co-parts` |
+| `condition` | string | `Runner`, `Runs and drives`, `Enhanced vehicle`, `Stationary` |
+| `already_purchased` | boolean | `true` / `false` |
+| `bid_price` | string | Required when `already_purchased` is `false` |
+| `vehicle_stock_no` | string | Required when `already_purchased` is `true` |
+| `buyer_no` | string | Required when `already_purchased` is `true` |
+| `buyer_code` | string | Required when `already_purchased` is `true` |
+| `services` | array | `trucking` ($800), `shipping` ($2000) |
+| `status` | string | `pending`, `processing`, `in_transit`, `at_port`, `delivered`, `cancelled` |
+
+## Project Structure
+
+```
+app/
+├── Http/
+│   ├── Controllers/        # Thin controllers — orchestration only
+│   │   └── Admin/
+│   ├── Middleware/         # CheckRole middleware
+│   ├── Requests/           # Form Request validation classes
+│   │   ├── Auth/
+│   │   ├── Order/
+│   │   └── Profile/
+│   └── Resources/          # API Resource response shaping
+│       └── Admin/
+├── Models/                 # Eloquent models (User, Order)
+└── Services/               # Business logic
+    └── Admin/
+database/
+├── factories/              # Model factories for testing
+├── migrations/
+└── database.sqlite
+routes/
+└── api.php
+tests/
+├── Feature/                # HTTP endpoint tests
+└── Unit/                   # Service layer tests
+```
+
+## Running Tests
+
+```bash
+php artisan test
+```
+
+The test suite uses an in-memory SQLite database — no setup required.
+
+```
+Tests:    69 passed
+Duration: ~800ms
+```
+
+## Frontend
+
+The React frontend companion app expects this API at `http://127.0.0.1:8000/api`. Set `VITE_API_URL` in the frontend `.env` to point to a different host.
