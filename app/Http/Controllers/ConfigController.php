@@ -52,11 +52,8 @@ class ConfigController extends Controller
             ],
 
             'destination_ports' => [
-                ['value' => 'lagos_apapa',   'label' => 'Lagos (Apapa)'],
                 ['value' => 'tin_can_lagos', 'label' => 'Tin Can Island, Lagos'],
-                ['value' => 'onne_rivers',   'label' => 'Onne Port, Rivers'],
-                ['value' => 'calabar',       'label' => 'Calabar Port'],
-                ['value' => 'cotonou',       'label' => 'Cotonou, Benin'],
+                ['value' => 'lagos_apapa',   'label' => 'Apapa, Lagos'],
                 ['value' => 'tema_ghana',    'label' => 'Tema, Ghana'],
             ],
 
