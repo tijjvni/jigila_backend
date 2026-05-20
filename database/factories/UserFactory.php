@@ -40,8 +40,16 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn () => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(fn () => ['email_verified_at' => null]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn () => ['role' => 'admin']);
+    }
+
+    public function archived(): static
+    {
+        return $this->state(fn () => ['status' => 'archived']);
     }
 }

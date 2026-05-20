@@ -131,8 +131,7 @@ class AuthControllerTest extends TestCase
         $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['message', 'otp'])
-            ->assertJsonFragment(['message' => 'OTP sent to your email.']);
+            ->assertExactJson(['message' => 'OTP sent to your email.']);
 
         $this->assertDatabaseHas('password_reset_tokens', ['email' => $user->email]);
     }

@@ -42,9 +42,9 @@ class AuthController extends Controller
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $otp = $this->authService->forgotPassword($request->validated('email'));
+        $this->authService->forgotPassword($request->validated('email'));
 
-        return response()->json(['message' => 'OTP sent to your email.', 'otp' => $otp]);
+        return response()->json(['message' => 'OTP sent to your email.']);
     }
 
     public function verifyOtp(VerifyOtpRequest $request): JsonResponse

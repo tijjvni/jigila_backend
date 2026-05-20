@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests\Order;
 
+use App\Enums\AuctionSource;
+use App\Enums\OrderStatus;
+use App\Enums\ServiceType;
+use App\Enums\VehicleCondition;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateOrderRequest extends FormRequest
 {
@@ -16,16 +21,16 @@ class UpdateOrderRequest extends FormRequest
         return [
             'vin'               => 'sometimes|string|max:17',
             'stock_id'          => 'nullable|string',
-            'auction_source'    => 'sometimes|in:Copart,IAAI,Co-parts',
-            'condition'         => 'sometimes|in:Runner,Runs and drives,Enhanced vehicle,Stationary',
+            'auction_source'    => ['sometimes', Rule::in(AuctionSource::values())],
+            'condition'         => ['sometimes', Rule::in(VehicleCondition::values())],
             'already_purchased' => 'sometimes|boolean',
             'bid_price'         => 'nullable|string',
             'vehicle_stock_no'  => 'nullable|string',
             'buyer_no'          => 'nullable|string',
             'buyer_code'        => 'nullable|string',
             'services'          => 'nullable|array',
-            'services.*'        => 'in:trucking,shipping',
-            'status'            => 'sometimes|in:pending,processing,in_transit,at_port,delivered,cancelled',
+            'services.*'        => Rule::in(ServiceType::values()),
+            'status'            => ['sometimes', Rule::in(OrderStatus::values())],
         ];
     }
 }

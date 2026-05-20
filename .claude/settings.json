@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /home/tj/Documents/ | grep -i jigila)",
+      "Read(//home/tj/Documents/**)",
+      "Bash(git -C /home/tj/Documents/jigila log --oneline)",
+      "Bash(git -C /home/tj/Documents/jigila_backend diff --name-only)",
+      "Bash(git -C /home/tj/Documents/jigila status --short)",
+      "Bash(npm uninstall *)"
+    ],
+    "additionalDirectories": [
+      "/home/tj/Documents/jigila/src"
+    ]
+  }
+}
