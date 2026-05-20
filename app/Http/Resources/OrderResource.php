@@ -22,7 +22,13 @@ class OrderResource extends JsonResource
             'buyer_code'        => $this->buyer_code,
             'services'          => $this->services,
             'status'            => $this->status,
+            'pickup_location'   => $this->pickup_location,
+            'departure_port'    => $this->departure_port,
+            'destination_port'  => $this->destination_port,
+            'bid_status'        => $this->bid_status,
+            'out_bid_price'     => $this->out_bid_price,
             'user'              => new UserResource($this->whenLoaded('user')),
+            'invoice'           => new InvoiceResource($this->whenLoaded('invoice')),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];

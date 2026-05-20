@@ -17,7 +17,7 @@ class OrderServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new OrderService();
+        $this->service = app(OrderService::class);
     }
 
     public function test_list_returns_only_users_own_orders(): void

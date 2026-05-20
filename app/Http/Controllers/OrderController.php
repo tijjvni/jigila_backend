@@ -17,7 +17,9 @@ class OrderController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        return OrderResource::collection($this->orderService->list($request->user()));
+        $perPage = min((int) $request->input('per_page', 15), 100);
+
+        return OrderResource::collection($this->orderService->list($request->user(), $perPage));
     }
 
     public function store(StoreOrderRequest $request): JsonResponse
