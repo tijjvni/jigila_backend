@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AuctionSource;
+use App\Enums\OrderStatus;
+use App\Enums\ServiceType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,7 +31,7 @@ class ConfigControllerTest extends TestCase
         $response = $this->getJson('/api/config')->assertStatus(200);
 
         $sources = collect($response->json('auction_sources'))->pluck('value')->all();
-        $this->assertEqualsCanonicalizing(['Copart', 'IAAI'], $sources);
+        $this->assertEqualsCanonicalizing(AuctionSource::values(), $sources);
     }
 
     public function test_config_contains_expected_order_statuses(): void
@@ -36,10 +39,7 @@ class ConfigControllerTest extends TestCase
         $response = $this->getJson('/api/config')->assertStatus(200);
 
         $statuses = collect($response->json('order_statuses'))->pluck('value')->all();
-        $this->assertEqualsCanonicalizing(
-            ['pending', 'processing', 'pickup', 'in_transit', 'at_port', 'on_vessel', 'delivered', 'cancelled'],
-            $statuses
-        );
+        $this->assertEqualsCanonicalizing(OrderStatus::values(), $statuses);
     }
 
     public function test_config_contains_expected_services(): void
@@ -47,7 +47,7 @@ class ConfigControllerTest extends TestCase
         $response = $this->getJson('/api/config')->assertStatus(200);
 
         $services = collect($response->json('services'))->pluck('value')->all();
-        $this->assertEqualsCanonicalizing(['trucking', 'shipping'], $services);
+        $this->assertEqualsCanonicalizing(ServiceType::values(), $services);
     }
 
     public function test_config_is_publicly_accessible(): void

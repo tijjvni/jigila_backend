@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\AuctionSource;
+use App\Enums\OrderStatus;
+use App\Enums\ServiceType;
+use App\Enums\VehicleCondition;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,15 +23,15 @@ class OrderFactory extends Factory
             'user_id'           => User::factory(),
             'vin'               => strtoupper(fake()->bothify('?????????????????')),
             'stock_id'          => fake()->optional()->bothify('STK-####'),
-            'auction_source'    => fake()->randomElement(['Copart', 'IAAI']),
-            'condition'         => fake()->randomElement(['Run and Drive', 'Non-Runner', 'Forklift']),
+            'auction_source'    => fake()->randomElement(AuctionSource::values()),
+            'condition'         => fake()->randomElement(VehicleCondition::values()),
             'already_purchased' => $purchased,
             'bid_price'         => $purchased ? null : (string) fake()->numberBetween(1000, 20000),
             'vehicle_stock_no'  => $purchased ? fake()->bothify('VS-####') : null,
             'buyer_no'          => $purchased ? fake()->bothify('BN-####') : null,
             'buyer_code'        => $purchased ? fake()->bothify('BC-####') : null,
-            'services'          => fake()->randomElements(['trucking', 'shipping'], fake()->numberBetween(0, 2)),
-            'status'            => fake()->randomElement(['pending', 'processing', 'in_transit', 'at_port', 'delivered', 'cancelled']),
+            'services'          => fake()->randomElements(ServiceType::values(), fake()->numberBetween(0, 2)),
+            'status'            => fake()->randomElement(OrderStatus::values()),
         ];
     }
 }
