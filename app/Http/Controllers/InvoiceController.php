@@ -14,12 +14,9 @@ class InvoiceController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $invoices = Invoice::where('user_id', $request->user()->id)
-            ->with('order')
-            ->latest()
-            ->get();
-
-        return InvoiceResource::collection($invoices);
+        return InvoiceResource::collection(
+            $this->invoiceService->list($request->user())
+        );
     }
 
     public function show(Request $request, Invoice $invoice): InvoiceResource
