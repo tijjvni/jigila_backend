@@ -124,16 +124,39 @@ class AuthControllerTest extends TestCase
     // Forgot Password
     // -------------------------------------------------------------------------
 
-    public function test_forgot_password_returns_otp_for_existing_email(): void
+    public function test_forgot_password_returns_success_message_for_existing_email(): void
     {
         $user = User::factory()->create();
 
         $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
 
         $response->assertStatus(200)
-            ->assertExactJson(['message' => 'OTP sent to your email.']);
+            ->assertJsonFragment(['message' => 'OTP sent to your email.']);
 
         $this->assertDatabaseHas('password_reset_tokens', ['email' => $user->email]);
+    }
+
+    public function test_forgot_password_returns_otp_when_debug_is_true(): void
+    {
+        config(['app.debug' => true]);
+
+        $user     = User::factory()->create();
+        $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
+
+        $response->assertStatus(200);
+        $this->assertNotNull($response->json('otp'));
+        $this->assertMatchesRegularExpression('/^\d{6}$/', (string) $response->json('otp'));
+    }
+
+    public function test_forgot_password_omits_otp_when_debug_is_false(): void
+    {
+        config(['app.debug' => false]);
+
+        $user     = User::factory()->create();
+        $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
+
+        $response->assertStatus(200);
+        $this->assertNull($response->json('otp'));
     }
 
     public function test_forgot_password_rejects_unknown_email(): void
