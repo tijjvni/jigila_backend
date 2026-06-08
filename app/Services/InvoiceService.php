@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 class InvoiceService
 {
@@ -25,11 +26,12 @@ class InvoiceService
         $paymentReference = null;
 
         try {
-            $callbackUrl = config('services.paystack.callback_url', url('/invoice'));
+            $callbackUrl      = config('services.paystack.callback_url', url('/invoice'));
+            $paystackRef      = 'jig_' . Str::uuid()->toString();
             $data = $this->paystack->initializeTransaction(
                 $user->email,
                 (int) round($amount * 100),
-                $invoiceNumber,
+                $paystackRef,
                 $callbackUrl,
             );
             $paymentUrl       = $data['authorization_url'];
