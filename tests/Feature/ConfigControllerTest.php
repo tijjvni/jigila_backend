@@ -37,7 +37,7 @@ class ConfigControllerTest extends TestCase
 
         $statuses = collect($response->json('order_statuses'))->pluck('value')->all();
         $this->assertEqualsCanonicalizing(
-            ['pending', 'processing', 'in_transit', 'at_port', 'delivered', 'cancelled'],
+            ['pending', 'processing', 'pickup', 'in_transit', 'at_port', 'on_vessel', 'delivered', 'cancelled'],
             $statuses
         );
     }
