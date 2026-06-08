@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\DeparturePort;
+use App\Enums\DestinationPort;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,12 +18,8 @@ class UpdateOrderLocationRequest extends FormRequest
     {
         return [
             'pickup_location'  => 'nullable|string|max:255',
-            'departure_port'   => ['nullable', Rule::in([
-                'houston_tx', 'baltimore_md', 'newark_nj', 'savannah_ga', 'los_angeles_ca',
-            ])],
-            'destination_port' => ['nullable', Rule::in([
-                'tin_can_lagos', 'lagos_apapa', 'tema_ghana',
-            ])],
+            'departure_port'   => ['nullable', Rule::in(DeparturePort::values())],
+            'destination_port' => ['nullable', Rule::in(DestinationPort::values())],
         ];
     }
 }
