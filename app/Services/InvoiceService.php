@@ -56,9 +56,12 @@ class InvoiceService
 
     public function list(User $user): Collection
     {
-        return $user->role === 'admin'
-            ? Invoice::with(['user', 'order'])->latest()->get()
-            : Invoice::where('user_id', $user->id)->with('order')->latest()->get();
+        return Invoice::where('user_id', $user->id)->with('order')->latest()->get();
+    }
+
+    public function listAll(): Collection
+    {
+        return Invoice::with(['user', 'order'])->latest()->get();
     }
 
     public function find(Invoice $invoice): Invoice

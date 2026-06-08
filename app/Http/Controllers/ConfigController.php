@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuctionSource;
+use App\Enums\DeparturePort;
+use App\Enums\DestinationPort;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\ServiceType;
@@ -43,19 +45,9 @@ class ConfigController extends Controller
                 ['Dashboard', 'Budget Reports', 'KPI Tracking', 'User Management']
             ),
 
-            'departure_ports' => [
-                ['value' => 'houston_tx',     'label' => 'Houston, TX'],
-                ['value' => 'baltimore_md',   'label' => 'Baltimore, MD'],
-                ['value' => 'newark_nj',      'label' => 'Newark, NJ'],
-                ['value' => 'savannah_ga',    'label' => 'Savannah, GA'],
-                ['value' => 'los_angeles_ca', 'label' => 'Los Angeles, CA'],
-            ],
+            'departure_ports'   => DeparturePort::options(),
 
-            'destination_ports' => [
-                ['value' => 'tin_can_lagos', 'label' => 'Tin Can Island, Lagos'],
-                ['value' => 'lagos_apapa',   'label' => 'Apapa, Lagos'],
-                ['value' => 'tema_ghana',    'label' => 'Tema, Ghana'],
-            ],
+            'destination_ports' => DestinationPort::options(),
 
             'pickup_locations' => [
                 ['value' => 'houston_tx',     'label' => 'Houston, TX'],

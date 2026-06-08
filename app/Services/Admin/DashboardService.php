@@ -45,9 +45,10 @@ class DashboardService
 
         $driver     = DB::connection()->getDriverName();
         $monthExpr  = match ($driver) {
-            'pgsql'  => 'EXTRACT(MONTH FROM created_at)::int',
-            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
-            default  => 'MONTH(created_at)',
+            'pgsql'              => 'EXTRACT(MONTH FROM created_at)::int',
+            'sqlite'             => "CAST(strftime('%m', created_at) AS INTEGER)",
+            'mysql', 'mariadb'   => 'MONTH(created_at)',
+            default              => throw new \RuntimeException("Unsupported driver for ordersByMonth(): {$driver}"),
         };
 
         $data = Order::selectRaw("{$monthExpr} as month, count(*) as count")
