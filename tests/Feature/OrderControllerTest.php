@@ -56,7 +56,7 @@ class OrderControllerTest extends TestCase
         $response = $this->actingAs($user)->postJson('/api/orders', [
             'vin'               => '1HGCM82633A004352',
             'auction_source'    => 'Copart',
-            'condition'         => 'Runner',
+            'condition'         => 'Run and Drive',
             'already_purchased' => false,
             'bid_price'         => '7500',
             'services'          => ['trucking'],
@@ -87,7 +87,7 @@ class OrderControllerTest extends TestCase
             ->postJson('/api/orders', [
                 'vin'               => '1HGCM82633A004352',
                 'auction_source'    => 'InvalidSource',
-                'condition'         => 'Runner',
+                'condition'         => 'Run and Drive',
                 'already_purchased' => false,
                 'bid_price'         => '5000',
             ])

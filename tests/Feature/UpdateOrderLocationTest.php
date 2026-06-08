@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DeparturePort;
+use App\Enums\DestinationPort;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,12 +70,12 @@ class UpdateOrderLocationTest extends TestCase
 
         $this->actingAs($admin)
             ->patchJson("/api/admin/orders/{$order->id}/location", [
-                'departure_port' => 'houston_tx',
+                'departure_port' => DeparturePort::HoustonTX->value,
             ])->assertStatus(200);
 
         $this->assertDatabaseHas('orders', [
             'id'             => $order->id,
-            'departure_port' => 'houston_tx',
+            'departure_port' => DeparturePort::HoustonTX->value,
         ]);
     }
 
@@ -84,12 +86,12 @@ class UpdateOrderLocationTest extends TestCase
 
         $this->actingAs($admin)
             ->patchJson("/api/admin/orders/{$order->id}/location", [
-                'destination_port' => 'tin_can_lagos',
+                'destination_port' => DestinationPort::TinCanLagos->value,
             ])->assertStatus(200);
 
         $this->assertDatabaseHas('orders', [
             'id'               => $order->id,
-            'destination_port' => 'tin_can_lagos',
+            'destination_port' => DestinationPort::TinCanLagos->value,
         ]);
     }
 
@@ -101,22 +103,22 @@ class UpdateOrderLocationTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/admin/orders/{$order->id}/location", [
                 'pickup_location'  => 'Atlanta, GA',
-                'departure_port'   => 'savannah_ga',
-                'destination_port' => 'lagos_apapa',
+                'departure_port'   => DeparturePort::SavannahGA->value,
+                'destination_port' => DestinationPort::LagosApapa->value,
             ])->assertStatus(200);
 
         $this->assertDatabaseHas('orders', [
             'id'               => $order->id,
             'pickup_location'  => 'Atlanta, GA',
-            'departure_port'   => 'savannah_ga',
-            'destination_port' => 'lagos_apapa',
+            'departure_port'   => DeparturePort::SavannahGA->value,
+            'destination_port' => DestinationPort::LagosApapa->value,
         ]);
     }
 
     public function test_all_departure_port_values_are_accepted(): void
     {
         $admin  = $this->adminUser();
-        $ports  = ['houston_tx', 'baltimore_md', 'newark_nj', 'savannah_ga', 'los_angeles_ca'];
+        $ports  = DeparturePort::values();
 
         foreach ($ports as $port) {
             $order = $this->order();
@@ -130,7 +132,7 @@ class UpdateOrderLocationTest extends TestCase
     public function test_all_destination_port_values_are_accepted(): void
     {
         $admin = $this->adminUser();
-        $ports = ['tin_can_lagos', 'lagos_apapa', 'tema_ghana'];
+        $ports = DestinationPort::values();
 
         foreach ($ports as $port) {
             $order = $this->order();
