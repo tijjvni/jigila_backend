@@ -28,7 +28,7 @@ class ConfigControllerTest extends TestCase
         $response = $this->getJson('/api/config')->assertStatus(200);
 
         $sources = collect($response->json('auction_sources'))->pluck('value')->all();
-        $this->assertEqualsCanonicalizing(['Copart', 'IAAI', 'Co-parts'], $sources);
+        $this->assertEqualsCanonicalizing(['Copart', 'IAAI'], $sources);
     }
 
     public function test_config_contains_expected_order_statuses(): void

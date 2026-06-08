@@ -28,11 +28,11 @@ class ConfigController extends Controller
                 ['Pending', 'Processing', 'Pickup', 'In Transit', 'At Port', 'On Vessel', 'Delivered', 'Cancelled']
             ),
 
-            'auction_sources' => self::toOptions(AuctionSource::values(), ['Copart', 'IAAI', 'Co-parts']),
+            'auction_sources' => self::toOptions(AuctionSource::values(), ['Copart', 'IAAI']),
 
             'vehicle_conditions' => self::toOptions(
                 VehicleCondition::values(),
-                ['Runner', 'Runs and drives', 'Enhanced vehicle', 'Stationary']
+                ['Run and Drive', 'Non-Runner', 'Forklift']
             ),
 
             'user_roles' => [

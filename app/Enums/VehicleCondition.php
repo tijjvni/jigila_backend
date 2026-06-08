@@ -4,10 +4,9 @@ namespace App\Enums;
 
 enum VehicleCondition: string
 {
-    case Runner          = 'Runner';
-    case RunsAndDrives   = 'Runs and drives';
-    case EnhancedVehicle = 'Enhanced vehicle';
-    case Stationary      = 'Stationary';
+    case RunAndDrive = 'Run and Drive';
+    case NonRunner   = 'Non-Runner';
+    case Forklift    = 'Forklift';
 
     public static function values(): array
     {

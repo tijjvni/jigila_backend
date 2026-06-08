@@ -4,9 +4,8 @@ namespace App\Enums;
 
 enum AuctionSource: string
 {
-    case Copart   = 'Copart';
-    case IAAI     = 'IAAI';
-    case CoParts  = 'Co-parts';
+    case Copart = 'Copart';
+    case IAAI   = 'IAAI';
 
     public static function values(): array
     {
