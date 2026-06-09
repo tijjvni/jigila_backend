@@ -10,9 +10,12 @@ use Illuminate\Validation\ValidationException;
 
 class AuthService
 {
+    public function __construct(private NotificationService $notifications) {}
+
     public function register(array $data): void
     {
-        User::create($data);
+        $user = User::create($data);
+        $this->notifications->sendWelcome($user);
     }
 
     public function login(array $data): array
