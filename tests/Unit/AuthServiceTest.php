@@ -4,10 +4,12 @@ namespace Tests\Unit;
 
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Mockery;
 use Tests\TestCase;
 
 class AuthServiceTest extends TestCase
@@ -19,7 +21,9 @@ class AuthServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new AuthService();
+        $notifications = Mockery::mock(NotificationService::class);
+        $notifications->shouldIgnoreMissing();
+        $this->service = new AuthService($notifications);
     }
 
     public function test_register_creates_user(): void

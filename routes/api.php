@@ -5,10 +5,12 @@ use App\Http\Controllers\ConfigController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('invoices', [InvoiceController::class, 'index']);
     Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
 
+    Route::get('tickets', [TicketController::class, 'index']);
+    Route::post('tickets', [TicketController::class, 'store']);
+    Route::get('tickets/{ticket}', [TicketController::class, 'show']);
+    Route::post('tickets/{ticket}/messages', [TicketController::class, 'reply']);
+
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::get('dashboard', [DashboardController::class, 'index']);
 
@@ -53,6 +60,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('invoices', [AdminInvoiceController::class, 'index']);
         Route::get('invoices/{invoice}', [AdminInvoiceController::class, 'show']);
         Route::post('orders/{order}/invoices', [AdminInvoiceController::class, 'store']);
+
+        // Tickets
+        Route::get('tickets', [AdminTicketController::class, 'index']);
+        Route::get('tickets/{ticket}', [AdminTicketController::class, 'show']);
+        Route::post('tickets/{ticket}/messages', [AdminTicketController::class, 'reply']);
+        Route::patch('tickets/{ticket}/status', [AdminTicketController::class, 'updateStatus']);
 
         // Roles (assign must precede the resource to avoid {role} capturing "assign")
         Route::post('roles/assign',                 [RoleController::class, 'assign']);
