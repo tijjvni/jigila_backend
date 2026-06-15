@@ -3,11 +3,9 @@
 namespace Tests\Unit;
 
 use App\Models\Ticket;
-use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\TicketService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Mockery;
 use Tests\TestCase;
 
@@ -187,7 +185,7 @@ class TicketServiceTest extends TestCase
 
     public function test_authorize_throws_403_for_non_owner(): void
     {
-        $this->expectException(HttpResponseException::class);
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 
         $other  = $this->createUser();
         $ticket = Ticket::factory()->create();

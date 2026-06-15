@@ -6,7 +6,7 @@ use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\DB;
 
 class TicketService
 {
@@ -31,30 +31,43 @@ class TicketService
 
     public function stats(): array
     {
+        $counts = Ticket::selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $resolvedToday = Ticket::where('status', 'resolved')
+            ->whereDate('updated_at', today())
+            ->count();
+
         return [
-            'total'          => Ticket::count(),
-            'open'           => Ticket::where('status', 'open')->count(),
-            'in_progress'    => Ticket::where('status', 'in_progress')->count(),
-            'resolved_today' => Ticket::where('status', 'resolved')
-                ->whereDate('updated_at', today())
-                ->count(),
+            'total'          => $counts->sum(),
+            'open'           => (int) ($counts['open'] ?? 0),
+            'in_progress'    => (int) ($counts['in_progress'] ?? 0),
+            'resolved_today' => $resolvedToday,
         ];
     }
 
     public function create(User $user, string $subject, string $body): Ticket
     {
-        $ticket = Ticket::create([
-            'user_id'       => $user->id,
-            'ticket_number' => $this->generateTicketNumber(),
-            'subject'       => $subject,
-            'status'        => 'open',
-        ]);
+        $ticket = DB::transaction(function () use ($user, $subject, $body) {
+            $last         = Ticket::lockForUpdate()->max('id') ?? 0;
+            $ticketNumber = 'TKT-' . str_pad($last + 1, 5, '0', STR_PAD_LEFT);
 
-        $ticket->messages()->create([
-            'user_id'        => $user->id,
-            'body'           => $body,
-            'is_staff_reply' => false,
-        ]);
+            $ticket = Ticket::create([
+                'user_id'       => $user->id,
+                'ticket_number' => $ticketNumber,
+                'subject'       => $subject,
+                'status'        => 'open',
+            ]);
+
+            $ticket->messages()->create([
+                'user_id'        => $user->id,
+                'body'           => $body,
+                'is_staff_reply' => false,
+            ]);
+
+            return $ticket;
+        });
 
         $this->notifications->sendTicketCreated($ticket->load('user'));
 
@@ -81,10 +94,13 @@ class TicketService
         }
 
         $ticket->loadMissing('user');
-        $recipient = $isStaff ? $ticket->user : $this->findAdminRecipient();
 
-        if ($recipient) {
-            $this->notifications->sendTicketReply($ticket, $message->load('user'), $recipient);
+        if ($isStaff) {
+            $this->notifications->sendTicketReply($ticket, $message->load('user'), $ticket->user);
+        } else {
+            User::where('role', 'admin')->get()->each(
+                fn ($admin) => $this->notifications->sendTicketReply($ticket, $message->load('user'), $admin)
+            );
         }
 
         return $message;
@@ -99,26 +115,8 @@ class TicketService
 
     public function authorize(User $user, Ticket $ticket): void
     {
-        if ($user->role === 'admin') {
-            return;
+        if ($user->role !== 'admin' && $ticket->user_id !== $user->id) {
+            abort(403, 'Unauthorized.');
         }
-
-        if ($ticket->user_id !== $user->id) {
-            throw new HttpResponseException(
-                response()->json(['message' => 'Forbidden.'], 403)
-            );
-        }
-    }
-
-    private function generateTicketNumber(): string
-    {
-        $count = Ticket::count() + 1;
-
-        return 'TKT-' . str_pad((string) $count, 5, '0', STR_PAD_LEFT);
-    }
-
-    private function findAdminRecipient(): ?User
-    {
-        return User::where('role', 'admin')->first();
     }
 }

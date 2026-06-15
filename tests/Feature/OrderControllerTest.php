@@ -107,7 +107,7 @@ class OrderControllerTest extends TestCase
         $this->actingAs($user)
             ->getJson("/api/orders/{$order->id}")
             ->assertStatus(200)
-            ->assertJsonPath('data.id', $order->id);
+            ->assertJsonPath('data.id', (string) $order->id);
     }
 
     public function test_user_cannot_view_another_users_order(): void

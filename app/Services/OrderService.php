@@ -13,8 +13,8 @@ class OrderService
     public function list(User $user, int $perPage = 15): LengthAwarePaginator
     {
         return $user->role === 'admin'
-            ? Order::with('user')->latest()->paginate($perPage)
-            : $user->orders()->latest()->paginate($perPage);
+            ? Order::with(['user', 'invoice'])->latest()->paginate($perPage)
+            : $user->orders()->with(['invoice'])->latest()->paginate($perPage);
     }
 
     public function create(User $user, array $data): Order

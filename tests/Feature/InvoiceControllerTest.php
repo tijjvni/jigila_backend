@@ -67,7 +67,7 @@ class InvoiceControllerTest extends TestCase
         $response = $this->actingAs($user)->getJson("/api/invoices/{$invoice->id}");
 
         $response->assertStatus(200)
-            ->assertJsonFragment(['id' => $invoice->id]);
+            ->assertJsonFragment(['id' => (string) $invoice->id]);
     }
 
     public function test_user_cannot_view_another_users_invoice(): void
