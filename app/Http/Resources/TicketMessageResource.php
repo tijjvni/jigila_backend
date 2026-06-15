@@ -10,11 +10,11 @@ class TicketMessageResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'             => $this->id,
+            'id'             => (string) $this->id,
             'body'           => $this->body,
             'is_staff_reply' => $this->is_staff_reply,
             'user'           => [
-                'id'   => $this->user->id,
+                'id'   => (string) $this->user->id,
                 'name' => $this->user->name,
             ],
             'created_at' => $this->created_at,

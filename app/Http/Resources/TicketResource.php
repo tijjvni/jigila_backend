@@ -10,13 +10,13 @@ class TicketResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'            => $this->id,
+            'id'            => (string) $this->id,
             'ticket_number' => $this->ticket_number,
             'subject'       => $this->subject,
             'status'        => $this->status,
             'message_count' => $this->messages_count ?? $this->messages->count(),
             'user'          => $this->whenLoaded('user', fn () => [
-                'id'    => $this->user->id,
+                'id'    => (string) $this->user->id,
                 'name'  => $this->user->name,
                 'email' => $this->user->email,
             ]),

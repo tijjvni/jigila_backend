@@ -9,6 +9,7 @@ use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\ServiceType;
 use App\Enums\VehicleCondition;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 
 class ConfigController extends Controller
@@ -57,6 +58,8 @@ class ConfigController extends Controller
                 ['value' => 'new_york_ny',    'label' => 'New York, NY'],
                 ['value' => 'chicago_il',     'label' => 'Chicago, IL'],
             ],
+
+            'exchange_rate' => Setting::get('exchange_rate') ? (float) Setting::get('exchange_rate') : null,
         ]);
     }
 }

@@ -12,6 +12,11 @@ class OrderService
         return Order::with(['user', 'invoice'])->latest()->paginate($perPage);
     }
 
+    public function find(Order $order): Order
+    {
+        return $order->load(['user', 'invoice']);
+    }
+
     public function updateStatus(Order $order, string $status): Order
     {
         $order->update(['status' => $status]);

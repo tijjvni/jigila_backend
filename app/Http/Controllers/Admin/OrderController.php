@@ -25,7 +25,7 @@ class OrderController extends Controller
 
     public function show(Order $order): OrderResource
     {
-        return new OrderResource($order->load(['user', 'invoice']));
+        return new OrderResource($this->orderService->find($order));
     }
 
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): OrderResource

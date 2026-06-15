@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\InvoiceController as AdminInvoiceController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\TicketController as AdminTicketController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\RoleController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('tickets/{ticket}', [AdminTicketController::class, 'show']);
         Route::post('tickets/{ticket}/messages', [AdminTicketController::class, 'reply']);
         Route::patch('tickets/{ticket}/status', [AdminTicketController::class, 'updateStatus']);
+
+        // Settings
+        Route::get('settings', [AdminSettingsController::class, 'index']);
+        Route::put('settings', [AdminSettingsController::class, 'update']);
 
         // Roles (assign must precede the resource to avoid {role} capturing "assign")
         Route::post('roles/assign',                 [RoleController::class, 'assign']);

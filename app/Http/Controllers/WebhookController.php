@@ -7,6 +7,7 @@ use App\Services\InvoiceService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
 {
@@ -24,20 +25,29 @@ class WebhookController extends Controller
             return response()->json(['message' => 'Invalid signature'], 400);
         }
 
-        $event = $request->input('event');
-        $data  = $request->input('data', []);
+        try {
+            $event = $request->input('event');
+            $data  = $request->input('data', []);
 
-        if ($event === 'charge.success') {
-            $reference = $data['reference'] ?? null;
-            if ($reference) {
-                $invoice = Invoice::where('payment_reference', $reference)
-                    ->where('status', 'pending')
-                    ->first();
+            if ($event === 'charge.success') {
+                $reference = $data['reference'] ?? null;
+                if ($reference) {
+                    $invoice = Invoice::where('payment_reference', $reference)
+                        ->where('status', 'pending')
+                        ->first();
 
-                if ($invoice) {
-                    $this->invoiceService->markPaid($invoice, $reference);
+                    if ($invoice) {
+                        $this->invoiceService->markPaid($invoice, $reference);
+                    } else {
+                        Log::warning('Paystack webhook: no pending invoice found for reference', ['reference' => $reference]);
+                    }
                 }
             }
+        } catch (\Throwable $e) {
+            Log::error('Paystack webhook processing failed', [
+                'error'   => $e->getMessage(),
+                'payload' => $payload,
+            ]);
         }
 
         return response()->json(['message' => 'OK']);

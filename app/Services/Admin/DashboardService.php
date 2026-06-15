@@ -4,39 +4,42 @@ namespace App\Services\Admin;
 
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
     public function stats(): array
     {
-        $activeShipmentStatuses = ['processing', 'in_transit', 'at_port'];
+        return Cache::remember('dashboard.stats', now()->addMinutes(5), function () {
+            $activeShipmentStatuses = ['processing', 'in_transit', 'at_port'];
 
-        return [
-            // Stat cards
-            'total_users'        => User::where('role', 'user')->count(),
-            'total_orders'       => Order::count(),
-            'active_shipments'   => Order::whereIn('status', $activeShipmentStatuses)->count(),
-            'total_revenue'      => (float) Order::whereNotNull('bid_price')->sum(DB::raw('CAST(bid_price AS REAL)')),
+            return [
+                // Stat cards
+                'total_users'        => User::where('role', 'user')->count(),
+                'total_orders'       => Order::count(),
+                'active_shipments'   => Order::whereIn('status', $activeShipmentStatuses)->count(),
+                'total_revenue'      => (float) Order::whereNotNull('bid_price')->sum(DB::raw('CAST(bid_price AS REAL)')),
 
-            // Chart: orders by status
-            'orders_by_status'   => Order::selectRaw('status, count(*) as count')
-                ->groupBy('status')
-                ->pluck('count', 'status'),
+                // Chart: orders by status
+                'orders_by_status'   => Order::selectRaw('status, count(*) as count')
+                    ->groupBy('status')
+                    ->pluck('count', 'status'),
 
-            // Chart: orders per month (current year)
-            'orders_by_month'    => $this->ordersByMonth(),
+                // Chart: orders per month (current year)
+                'orders_by_month'    => $this->ordersByMonth(),
 
-            // Chart: revenue by service
-            'revenue_by_service' => $this->revenueByService(),
+                // Chart: revenue by service
+                'revenue_by_service' => $this->revenueByService(),
 
-            // Metrics
-            'order_completion_rate' => $this->completionRate(),
-            'average_order_value'   => $this->averageOrderValue(),
+                // Metrics
+                'order_completion_rate' => $this->completionRate(),
+                'average_order_value'   => $this->averageOrderValue(),
 
-            // Table
-            'recent_orders'      => Order::with('user')->latest()->limit(10)->get(),
-        ];
+                // Table
+                'recent_orders'      => Order::with(['user', 'invoice'])->latest()->limit(10)->get(),
+            ];
+        });
     }
 
     private function ordersByMonth(): array

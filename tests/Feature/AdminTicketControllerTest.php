@@ -60,7 +60,7 @@ class AdminTicketControllerTest extends TestCase
         $this->actingAs($admin)
             ->getJson("/api/admin/tickets/{$ticket->id}")
             ->assertOk()
-            ->assertJsonPath('data.id', $ticket->id)
+            ->assertJsonPath('data.id', (string) $ticket->id)
             ->assertJsonStructure(['data' => ['messages']]);
     }
 

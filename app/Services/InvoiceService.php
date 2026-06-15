@@ -6,6 +6,8 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class InvoiceService
@@ -20,8 +22,6 @@ class InvoiceService
         float   $amount,
         array   $metadata = []
     ): Invoice {
-        $invoiceNumber = $this->generateNumber();
-
         $paymentUrl       = null;
         $paymentReference = null;
 
@@ -36,22 +36,31 @@ class InvoiceService
             );
             $paymentUrl       = $data['authorization_url'];
             $paymentReference = $data['reference'];
-        } catch (\Throwable) {
-            // Paystack is optional — invoice is still created without a payment link
+        } catch (\Throwable $e) {
+            Log::error('Paystack initialization failed', [
+                'user_id' => $user->id,
+                'amount'  => $amount,
+                'error'   => $e->getMessage(),
+            ]);
         }
 
-        return Invoice::create([
-            'user_id'            => $user->id,
-            'order_id'           => $order?->id,
-            'invoice_number'     => $invoiceNumber,
-            'type'               => $type,
-            'description'        => $description,
-            'amount'             => $amount,
-            'status'             => 'pending',
-            'payment_reference'  => $paymentReference,
-            'payment_url'        => $paymentUrl,
-            'metadata'           => !empty($metadata) ? $metadata : null,
-        ]);
+        return DB::transaction(function () use ($user, $order, $type, $description, $amount, $metadata, $paymentUrl, $paymentReference) {
+            $last          = Invoice::lockForUpdate()->max('id') ?? 0;
+            $invoiceNumber = 'INV-' . str_pad($last + 1, 6, '0', STR_PAD_LEFT);
+
+            return Invoice::create([
+                'user_id'            => $user->id,
+                'order_id'           => $order?->id,
+                'invoice_number'     => $invoiceNumber,
+                'type'               => $type,
+                'description'        => $description,
+                'amount'             => $amount,
+                'status'             => 'pending',
+                'payment_reference'  => $paymentReference,
+                'payment_url'        => $paymentUrl,
+                'metadata'           => !empty($metadata) ? $metadata : null,
+            ]);
+        });
     }
 
     public function list(User $user): Collection
@@ -85,10 +94,4 @@ class InvoiceService
         ]);
     }
 
-    private function generateNumber(): string
-    {
-        $last = Invoice::max('id') ?? 0;
-
-        return 'INV-' . str_pad($last + 1, 6, '0', STR_PAD_LEFT);
-    }
 }
