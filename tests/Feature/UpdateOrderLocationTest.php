@@ -152,7 +152,7 @@ class UpdateOrderLocationTest extends TestCase
 
         $this->actingAs($admin)
             ->patchJson("/api/admin/orders/{$order->id}/location", [
-                'departure_port' => 'miami_fl',
+                'departure_port' => 'new_orleans_la',
             ])->assertStatus(422)
             ->assertJsonValidationErrors(['departure_port']);
     }

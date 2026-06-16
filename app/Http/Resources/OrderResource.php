@@ -29,6 +29,7 @@ class OrderResource extends JsonResource
             'out_bid_price'     => $this->out_bid_price,
             'user'              => new UserResource($this->whenLoaded('user')),
             'invoice'           => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoices'          => InvoiceResource::collection($this->whenLoaded('invoices')),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];

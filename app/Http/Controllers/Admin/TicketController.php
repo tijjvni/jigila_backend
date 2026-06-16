@@ -10,7 +10,6 @@ use App\Http\Resources\TicketResource;
 use App\Models\Ticket;
 use App\Services\TicketService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
@@ -18,26 +17,26 @@ class TicketController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json([
+        return $this->okResponse([
             'data'  => TicketResource::collection($this->ticketService->listAll()),
             'stats' => $this->ticketService->stats(),
         ]);
     }
 
-    public function show(Ticket $ticket): TicketResource
+    public function show(Ticket $ticket): JsonResponse
     {
-        return new TicketResource($this->ticketService->find($ticket));
+        return $this->okResponse(new TicketResource($this->ticketService->find($ticket)));
     }
 
     public function reply(StoreTicketMessageRequest $request, Ticket $ticket): JsonResponse
     {
         $message = $this->ticketService->reply($ticket, $request->user(), $request->validated('body'));
 
-        return response()->json(['data' => new TicketMessageResource($message->load('user'))], 201);
+        return $this->createdResponse(new TicketMessageResource($message->load('user')));
     }
 
-    public function updateStatus(UpdateTicketStatusRequest $request, Ticket $ticket): TicketResource
+    public function updateStatus(UpdateTicketStatusRequest $request, Ticket $ticket): JsonResponse
     {
-        return new TicketResource($this->ticketService->updateStatus($ticket, $request->validated('status')));
+        return $this->okResponse(new TicketResource($this->ticketService->updateStatus($ticket, $request->validated('status'))));
     }
 }

@@ -32,6 +32,11 @@ class OrderFactory extends Factory
             'buyer_code'        => $purchased ? fake()->bothify('BC-####') : null,
             'services'          => fake()->randomElements(ServiceType::values(), fake()->numberBetween(0, 2)),
             'status'            => fake()->randomElement(OrderStatus::values()),
+            'pickup_location'   => null,
+            'departure_port'    => null,
+            'destination_port'  => null,
+            'bid_status'        => null,
+            'out_bid_price'     => null,
         ];
     }
 }

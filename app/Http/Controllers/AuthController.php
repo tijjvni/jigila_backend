@@ -20,14 +20,14 @@ class AuthController extends Controller
     {
         $this->authService->register($request->validated());
 
-        return response()->json(['message' => 'Registration successful.'], 201);
+        return $this->messageResponse('Registration successful.', 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
     {
         $result = $this->authService->login($request->validated());
 
-        return response()->json([
+        return $this->okResponse([
             'token' => $result['token'],
             'user'  => new UserResource($result['user']),
         ]);
@@ -37,14 +37,14 @@ class AuthController extends Controller
     {
         $this->authService->logout($request);
 
-        return response()->json(['message' => 'Logged out successfully.']);
+        return $this->messageResponse('Logged out successfully.');
     }
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         $otp = $this->authService->forgotPassword($request->validated('email'));
 
-        return response()->json(array_filter([
+        return $this->okResponse(array_filter([
             'message' => 'OTP sent to your email.',
             'otp'     => config('app.debug') ? $otp : null,
         ]));
@@ -54,7 +54,7 @@ class AuthController extends Controller
     {
         $this->authService->verifyOtp($request->validated('email'), $request->validated('otp'));
 
-        return response()->json(['message' => 'OTP verified.']);
+        return $this->messageResponse('OTP verified.');
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
@@ -65,6 +65,6 @@ class AuthController extends Controller
             $request->validated('password'),
         );
 
-        return response()->json(['message' => 'Password reset successfully.']);
+        return $this->messageResponse('Password reset successfully.');
     }
 }

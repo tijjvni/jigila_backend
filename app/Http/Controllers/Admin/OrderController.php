@@ -9,37 +9,37 @@ use App\Http\Requests\Admin\UpdateOrderStatusRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\Admin\OrderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class OrderController extends Controller
 {
     public function __construct(private OrderService $orderService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 15), 100);
 
-        return OrderResource::collection($this->orderService->list($perPage));
+        return $this->okResponse(OrderResource::collection($this->orderService->list($perPage)));
     }
 
-    public function show(Order $order): OrderResource
+    public function show(Order $order): JsonResponse
     {
-        return new OrderResource($this->orderService->find($order));
+        return $this->okResponse(new OrderResource($this->orderService->find($order)));
     }
 
-    public function updateStatus(UpdateOrderStatusRequest $request, Order $order): OrderResource
+    public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
     {
-        return new OrderResource($this->orderService->updateStatus($order, $request->validated('status')));
+        return $this->okResponse(new OrderResource($this->orderService->updateStatus($order, $request->validated('status'))));
     }
 
-    public function updateBid(UpdateOrderBidRequest $request, Order $order): OrderResource
+    public function updateBid(UpdateOrderBidRequest $request, Order $order): JsonResponse
     {
-        return new OrderResource($this->orderService->updateBid($order, $request->validated()));
+        return $this->okResponse(new OrderResource($this->orderService->updateBid($order, $request->validated())));
     }
 
-    public function updateLocation(UpdateOrderLocationRequest $request, Order $order): OrderResource
+    public function updateLocation(UpdateOrderLocationRequest $request, Order $order): JsonResponse
     {
-        return new OrderResource($this->orderService->updateLocation($order, $request->validated()));
+        return $this->okResponse(new OrderResource($this->orderService->updateLocation($order, $request->validated())));
     }
 }
