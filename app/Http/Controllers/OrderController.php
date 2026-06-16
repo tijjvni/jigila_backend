@@ -9,38 +9,37 @@ use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class OrderController extends Controller
 {
     public function __construct(private OrderService $orderService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 15), 100);
 
-        return OrderResource::collection($this->orderService->list($request->user(), $perPage));
+        return $this->okResponse(OrderResource::collection($this->orderService->list($request->user(), $perPage)));
     }
 
     public function store(StoreOrderRequest $request): JsonResponse
     {
         $order = $this->orderService->create($request->user(), $request->validated());
 
-        return (new OrderResource($order))->response()->setStatusCode(201);
+        return $this->createdResponse(new OrderResource($order));
     }
 
-    public function show(Request $request, Order $order): OrderResource
+    public function show(Request $request, Order $order): JsonResponse
     {
         $this->orderService->authorize($request->user(), $order);
 
-        return new OrderResource($this->orderService->find($order));
+        return $this->okResponse(new OrderResource($this->orderService->find($order)));
     }
 
-    public function update(UpdateOrderRequest $request, Order $order): OrderResource
+    public function update(UpdateOrderRequest $request, Order $order): JsonResponse
     {
         $this->orderService->authorize($request->user(), $order);
 
-        return new OrderResource($this->orderService->update($order, $request->validated()));
+        return $this->okResponse(new OrderResource($this->orderService->update($order, $request->validated())));
     }
 
     public function destroy(Request $request, Order $order): JsonResponse
@@ -48,6 +47,6 @@ class OrderController extends Controller
         $this->orderService->authorize($request->user(), $order);
         $this->orderService->delete($order);
 
-        return response()->json(['message' => 'Order deleted.']);
+        return $this->messageResponse('Order deleted.');
     }
 }

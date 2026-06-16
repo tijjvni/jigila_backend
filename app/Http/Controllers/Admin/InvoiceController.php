@@ -9,25 +9,24 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Services\InvoiceService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InvoiceController extends Controller
 {
     public function __construct(private InvoiceService $invoiceService) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
-        return InvoiceResource::collection(
+        return $this->okResponse(InvoiceResource::collection(
             $this->invoiceService->listAll()
-        );
+        ));
     }
 
-    public function show(Invoice $invoice): InvoiceResource
+    public function show(Invoice $invoice): JsonResponse
     {
-        return new InvoiceResource($this->invoiceService->find($invoice));
+        return $this->okResponse(new InvoiceResource($this->invoiceService->find($invoice)));
     }
 
-    public function store(StoreAdminInvoiceRequest $request, Order $order): InvoiceResource
+    public function store(StoreAdminInvoiceRequest $request, Order $order): JsonResponse
     {
         $invoice = $this->invoiceService->create(
             user:        $order->user,
@@ -38,6 +37,6 @@ class InvoiceController extends Controller
             metadata:    $request->validated('metadata', []),
         );
 
-        return new InvoiceResource($invoice->load('order'));
+        return $this->createdResponse(new InvoiceResource($invoice->load('order')));
     }
 }

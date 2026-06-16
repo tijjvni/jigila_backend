@@ -22,7 +22,8 @@ class WebhookController extends Controller
         $payload   = $request->getContent();
 
         if (!$this->paystack->validateWebhookSignature($payload, $signature)) {
-            return response()->json(['message' => 'Invalid signature'], 400);
+            Log::warning('Paystack webhook: invalid signature rejected');
+            return $this->messageResponse('OK');
         }
 
         try {
@@ -50,6 +51,6 @@ class WebhookController extends Controller
             ]);
         }
 
-        return response()->json(['message' => 'OK']);
+        return $this->messageResponse('OK');
     }
 }

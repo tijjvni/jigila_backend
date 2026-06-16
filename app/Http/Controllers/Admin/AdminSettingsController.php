@@ -11,7 +11,7 @@ class AdminSettingsController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json([
+        return $this->okResponse([
             'exchange_rate' => Setting::get('exchange_rate') ? (float) Setting::get('exchange_rate') : null,
         ]);
     }
@@ -24,6 +24,6 @@ class AdminSettingsController extends Controller
             Setting::set('exchange_rate', $validated['exchange_rate']);
         }
 
-        return response()->json(['message' => 'Settings updated successfully.']);
+        return $this->messageResponse('Settings updated successfully.');
     }
 }

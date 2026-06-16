@@ -21,7 +21,7 @@ class ConfigController extends Controller
 
     public function __invoke(): JsonResponse
     {
-        return response()->json([
+        return $this->okResponse([
             'services' => self::toOptions(ServiceType::values(), ['Trucking', 'Shipping']),
 
             'order_statuses' => self::toOptions(
@@ -51,16 +51,59 @@ class ConfigController extends Controller
             'destination_ports' => DestinationPort::options(),
 
             'pickup_locations' => [
-                ['value' => 'houston_tx',     'label' => 'Houston, TX'],
-                ['value' => 'dallas_tx',      'label' => 'Dallas, TX'],
-                ['value' => 'atlanta_ga',     'label' => 'Atlanta, GA'],
-                ['value' => 'los_angeles_ca', 'label' => 'Los Angeles, CA'],
-                ['value' => 'new_york_ny',    'label' => 'New York, NY'],
-                ['value' => 'chicago_il',     'label' => 'Chicago, IL'],
+                ['value' => 'al', 'label' => 'Alabama (AL)'],
+                ['value' => 'ak', 'label' => 'Alaska (AK)'],
+                ['value' => 'az', 'label' => 'Arizona (AZ)'],
+                ['value' => 'ar', 'label' => 'Arkansas (AR)'],
+                ['value' => 'ca', 'label' => 'California (CA)'],
+                ['value' => 'co', 'label' => 'Colorado (CO)'],
+                ['value' => 'ct', 'label' => 'Connecticut (CT)'],
+                ['value' => 'de', 'label' => 'Delaware (DE)'],
+                ['value' => 'fl', 'label' => 'Florida (FL)'],
+                ['value' => 'ga', 'label' => 'Georgia (GA)'],
+                ['value' => 'hi', 'label' => 'Hawaii (HI)'],
+                ['value' => 'id', 'label' => 'Idaho (ID)'],
+                ['value' => 'il', 'label' => 'Illinois (IL)'],
+                ['value' => 'in', 'label' => 'Indiana (IN)'],
+                ['value' => 'ia', 'label' => 'Iowa (IA)'],
+                ['value' => 'ks', 'label' => 'Kansas (KS)'],
+                ['value' => 'ky', 'label' => 'Kentucky (KY)'],
+                ['value' => 'la', 'label' => 'Louisiana (LA)'],
+                ['value' => 'me', 'label' => 'Maine (ME)'],
+                ['value' => 'md', 'label' => 'Maryland (MD)'],
+                ['value' => 'ma', 'label' => 'Massachusetts (MA)'],
+                ['value' => 'mi', 'label' => 'Michigan (MI)'],
+                ['value' => 'mn', 'label' => 'Minnesota (MN)'],
+                ['value' => 'ms', 'label' => 'Mississippi (MS)'],
+                ['value' => 'mo', 'label' => 'Missouri (MO)'],
+                ['value' => 'mt', 'label' => 'Montana (MT)'],
+                ['value' => 'ne', 'label' => 'Nebraska (NE)'],
+                ['value' => 'nv', 'label' => 'Nevada (NV)'],
+                ['value' => 'nh', 'label' => 'New Hampshire (NH)'],
+                ['value' => 'nj', 'label' => 'New Jersey (NJ)'],
+                ['value' => 'nm', 'label' => 'New Mexico (NM)'],
+                ['value' => 'ny', 'label' => 'New York (NY)'],
+                ['value' => 'nc', 'label' => 'North Carolina (NC)'],
+                ['value' => 'nd', 'label' => 'North Dakota (ND)'],
+                ['value' => 'oh', 'label' => 'Ohio (OH)'],
+                ['value' => 'ok', 'label' => 'Oklahoma (OK)'],
+                ['value' => 'or', 'label' => 'Oregon (OR)'],
+                ['value' => 'pa', 'label' => 'Pennsylvania (PA)'],
+                ['value' => 'ri', 'label' => 'Rhode Island (RI)'],
+                ['value' => 'sc', 'label' => 'South Carolina (SC)'],
+                ['value' => 'sd', 'label' => 'South Dakota (SD)'],
+                ['value' => 'tn', 'label' => 'Tennessee (TN)'],
+                ['value' => 'tx', 'label' => 'Texas (TX)'],
+                ['value' => 'ut', 'label' => 'Utah (UT)'],
+                ['value' => 'vt', 'label' => 'Vermont (VT)'],
+                ['value' => 'va', 'label' => 'Virginia (VA)'],
+                ['value' => 'wa', 'label' => 'Washington (WA)'],
+                ['value' => 'wv', 'label' => 'West Virginia (WV)'],
+                ['value' => 'wi', 'label' => 'Wisconsin (WI)'],
+                ['value' => 'wy', 'label' => 'Wyoming (WY)'],
             ],
 
             'exchange_rate' => Setting::get('exchange_rate') ? (float) Setting::get('exchange_rate') : null,
         ]);
     }
 }
-

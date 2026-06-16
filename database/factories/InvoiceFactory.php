@@ -19,7 +19,7 @@ class InvoiceFactory extends Factory
             'user_id'           => User::factory(),
             'order_id'          => null,
             'invoice_number'    => 'INV-' . str_pad(++$counter, 6, '0', STR_PAD_LEFT),
-            'type'              => fake()->randomElement(['bid', 'service']),
+            'type'              => fake()->randomElement(['bid', 'service', 'bid_deposit', 'bid_balance']),
             'description'       => fake()->sentence(),
             'amount'            => fake()->randomFloat(2, 100, 5000),
             'status'            => 'pending',

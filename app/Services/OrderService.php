@@ -21,14 +21,15 @@ class OrderService
     {
         $order = $user->orders()->create($data)->refresh();
 
-        // Auto-generate a bid invoice when the vehicle has not been purchased yet
+        // Auto-generate a 50% deposit invoice when the vehicle has not been purchased yet.
+        // The remaining 50% is invoiced automatically when the admin confirms the bid as won.
         if (!$data['already_purchased'] && !empty($data['bid_price'])) {
             $this->invoiceService->create(
                 $user,
                 $order,
-                'bid',
-                'Vehicle auction bid price',
-                (float) $data['bid_price'],
+                'bid_deposit',
+                '50% Initial Deposit – Vehicle Auction Bid',
+                round((float) $data['bid_price'] * 0.5, 2),
             );
         }
 

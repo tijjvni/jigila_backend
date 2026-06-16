@@ -12,51 +12,50 @@ use App\Models\User;
 use App\Services\Admin\RoleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class RoleController extends Controller
 {
     public function __construct(private RoleService $roleService) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): JsonResponse
     {
         $perPage = min((int) $request->input('per_page', 15), 100);
 
-        return AdminRoleResource::collection($this->roleService->list($perPage));
+        return $this->okResponse(AdminRoleResource::collection($this->roleService->list($perPage)));
     }
 
     public function store(StoreRoleRequest $request): JsonResponse
     {
         $role = $this->roleService->create($request->validated());
 
-        return (new AdminRoleResource($role))->response()->setStatusCode(201);
+        return $this->createdResponse(new AdminRoleResource($role));
     }
 
-    public function show(Role $role): AdminRoleResource
+    public function show(Role $role): JsonResponse
     {
-        return new AdminRoleResource($this->roleService->find($role));
+        return $this->okResponse(new AdminRoleResource($this->roleService->find($role)));
     }
 
-    public function update(UpdateRoleRequest $request, Role $role): AdminRoleResource
+    public function update(UpdateRoleRequest $request, Role $role): JsonResponse
     {
-        return new AdminRoleResource($this->roleService->update($role, $request->validated()));
+        return $this->okResponse(new AdminRoleResource($this->roleService->update($role, $request->validated())));
     }
 
     public function destroy(Role $role): JsonResponse
     {
         $this->roleService->delete($role);
 
-        return response()->json(['message' => 'Role deleted successfully.']);
+        return $this->messageResponse('Role deleted successfully.');
     }
 
-    public function addUser(Role $role, User $user): AdminRoleResource
+    public function addUser(Role $role, User $user): JsonResponse
     {
-        return new AdminRoleResource($this->roleService->addUser($role, $user));
+        return $this->okResponse(new AdminRoleResource($this->roleService->addUser($role, $user)));
     }
 
-    public function removeUser(Role $role, User $user): AdminRoleResource
+    public function removeUser(Role $role, User $user): JsonResponse
     {
-        return new AdminRoleResource($this->roleService->removeUser($role, $user));
+        return $this->okResponse(new AdminRoleResource($this->roleService->removeUser($role, $user)));
     }
 
     public function assign(AssignRoleRequest $request): JsonResponse
@@ -66,6 +65,6 @@ class RoleController extends Controller
             $request->validated('user_ids'),
         );
 
-        return response()->json(['message' => 'Role assigned successfully.']);
+        return $this->messageResponse('Role assigned successfully.');
     }
 }
