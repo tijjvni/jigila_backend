@@ -18,7 +18,7 @@ class AdminDashboardControllerTest extends TestCase
         Order::factory()->count(5)->create(['user_id' => $users->first()->id]);
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/dashboard')
+            ->getJson('/api/v1/admin/dashboard')
             ->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
@@ -37,13 +37,13 @@ class AdminDashboardControllerTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($user)
-            ->getJson('/api/admin/dashboard')
+            ->getJson('/api/v1/admin/dashboard')
             ->assertStatus(403);
     }
 
     public function test_guest_cannot_view_dashboard(): void
     {
-        $this->getJson('/api/admin/dashboard')->assertStatus(401);
+        $this->getJson('/api/v1/admin/dashboard')->assertStatus(401);
     }
 
     public function test_dashboard_recent_orders_are_limited_to_ten(): void
@@ -52,7 +52,7 @@ class AdminDashboardControllerTest extends TestCase
         $user  = User::factory()->create();
         Order::factory()->count(15)->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/dashboard');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/dashboard');
 
         $this->assertCount(10, $response->json('data.recent_orders'));
     }

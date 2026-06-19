@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\OrderAuditLog;
 
 /**
  * @property int $id
@@ -24,10 +28,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $status
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, Prunable;
 
     protected $fillable = [
         'user_id',
@@ -47,6 +52,7 @@ class Order extends Model
         'destination_port',
         'bid_status',
         'out_bid_price',
+        'vehicle_type',
     ];
 
     protected function casts(): array
@@ -70,5 +76,15 @@ class Order extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class)->latest();
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(OrderAuditLog::class);
+    }
+
+    public function prunable(): Builder
+    {
+        return static::onlyTrashed()->where('deleted_at', '<=', now()->subDays(90));
     }
 }

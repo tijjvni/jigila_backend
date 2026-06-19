@@ -17,9 +17,17 @@ class TicketController extends Controller
 
     public function index(): JsonResponse
     {
+        $paginated = $this->ticketService->listAll();
+
         return $this->okResponse([
-            'data'  => TicketResource::collection($this->ticketService->listAll()),
+            'data'  => TicketResource::collection($paginated->items()),
             'stats' => $this->ticketService->stats(),
+            'meta'  => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
         ]);
     }
 

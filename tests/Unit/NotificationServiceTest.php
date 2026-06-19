@@ -35,7 +35,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendWelcome($user);
 
-        Mail::assertSent(WelcomeMail::class, fn ($m) => $m->hasTo($user->email));
+        Mail::assertQueued(WelcomeMail::class, fn ($m) => $m->hasTo($user->email));
     }
 
     public function test_send_welcome_passes_user_to_mailable(): void
@@ -45,7 +45,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendWelcome($user);
 
-        Mail::assertSent(WelcomeMail::class, fn ($m) => $m->user->id === $user->id);
+        Mail::assertQueued(WelcomeMail::class, fn ($m) => $m->user->id === $user->id);
     }
 
     public function test_send_welcome_swallows_mail_exception(): void
@@ -69,7 +69,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendTicketCreated($ticket);
 
-        Mail::assertSent(TicketCreatedMail::class, fn ($m) => $m->hasTo($ticket->user->email));
+        Mail::assertQueued(TicketCreatedMail::class, fn ($m) => $m->hasTo($ticket->user->email));
     }
 
     public function test_send_ticket_created_passes_ticket_to_mailable(): void
@@ -80,7 +80,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendTicketCreated($ticket);
 
-        Mail::assertSent(TicketCreatedMail::class, fn ($m) => $m->ticket->id === $ticket->id);
+        Mail::assertQueued(TicketCreatedMail::class, fn ($m) => $m->ticket->id === $ticket->id);
     }
 
     public function test_send_ticket_created_swallows_exception(): void
@@ -112,7 +112,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendTicketReply($ticket, $message, $recipient);
 
-        Mail::assertSent(TicketReplyMail::class, fn ($m) => $m->hasTo($recipient->email));
+        Mail::assertQueued(TicketReplyMail::class, fn ($m) => $m->hasTo($recipient->email));
     }
 
     public function test_send_ticket_reply_passes_ticket_and_message_to_mailable(): void
@@ -128,7 +128,7 @@ class NotificationServiceTest extends TestCase
 
         $this->service->sendTicketReply($ticket, $message, $ticket->user);
 
-        Mail::assertSent(TicketReplyMail::class, function ($m) use ($ticket, $message) {
+        Mail::assertQueued(TicketReplyMail::class, function ($m) use ($ticket, $message) {
             return $m->ticket->id === $ticket->id && $m->message->id === $message->id;
         });
     }

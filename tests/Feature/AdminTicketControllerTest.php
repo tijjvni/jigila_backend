@@ -17,13 +17,13 @@ class AdminTicketControllerTest extends TestCase
 
     public function test_unauthenticated_cannot_access_admin_tickets(): void
     {
-        $this->getJson('/api/admin/tickets')->assertStatus(401);
+        $this->getJson('/api/v1/admin/tickets')->assertStatus(401);
     }
 
     public function test_non_admin_cannot_access_admin_tickets(): void
     {
         $this->actingAs($this->createUser())
-            ->getJson('/api/admin/tickets')
+            ->getJson('/api/v1/admin/tickets')
             ->assertStatus(403);
     }
 
@@ -36,7 +36,7 @@ class AdminTicketControllerTest extends TestCase
         Ticket::factory()->count(1)->create(['status' => 'in_progress']);
 
         $response = $this->actingAs($admin)
-            ->getJson('/api/admin/tickets')
+            ->getJson('/api/v1/admin/tickets')
             ->assertOk();
 
         $response->assertJsonStructure([
@@ -58,7 +58,7 @@ class AdminTicketControllerTest extends TestCase
         TicketMessage::factory()->count(2)->create(['ticket_id' => $ticket->id, 'user_id' => $ticket->user_id]);
 
         $this->actingAs($admin)
-            ->getJson("/api/admin/tickets/{$ticket->id}")
+            ->getJson("/api/v1/admin/tickets/{$ticket->id}")
             ->assertOk()
             ->assertJsonPath('data.id', (string) $ticket->id)
             ->assertJsonStructure(['data' => ['messages']]);
@@ -72,7 +72,7 @@ class AdminTicketControllerTest extends TestCase
         $ticket = Ticket::factory()->open()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/admin/tickets/{$ticket->id}/messages", ['body' => 'We are looking into it.'])
+            ->postJson("/api/v1/admin/tickets/{$ticket->id}/messages", ['body' => 'We are looking into it.'])
             ->assertStatus(201)
             ->assertJsonPath('data.is_staff_reply', true);
 
@@ -89,7 +89,7 @@ class AdminTicketControllerTest extends TestCase
         $ticket = Ticket::factory()->open()->create();
 
         $this->actingAs($admin)
-            ->postJson("/api/admin/tickets/{$ticket->id}/messages", ['body' => 'Handling now']);
+            ->postJson("/api/v1/admin/tickets/{$ticket->id}/messages", ['body' => 'Handling now']);
 
         $this->assertSame('in_progress', $ticket->fresh()->status);
     }
@@ -102,9 +102,9 @@ class AdminTicketControllerTest extends TestCase
         $ticket->load('user');
 
         $this->actingAs($admin)
-            ->postJson("/api/admin/tickets/{$ticket->id}/messages", ['body' => 'Hi there']);
+            ->postJson("/api/v1/admin/tickets/{$ticket->id}/messages", ['body' => 'Hi there']);
 
-        Mail::assertSent(TicketReplyMail::class, fn ($m) => $m->hasTo($ticket->user->email));
+        Mail::assertQueued(TicketReplyMail::class, fn ($m) => $m->hasTo($ticket->user->email));
     }
 
     // ── updateStatus ──────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ class AdminTicketControllerTest extends TestCase
         $ticket = Ticket::factory()->open()->create();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/tickets/{$ticket->id}/status", ['status' => 'resolved'])
+            ->patchJson("/api/v1/admin/tickets/{$ticket->id}/status", ['status' => 'resolved'])
             ->assertOk()
             ->assertJsonPath('data.status', 'resolved');
 
@@ -128,7 +128,7 @@ class AdminTicketControllerTest extends TestCase
         $ticket = Ticket::factory()->create();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/tickets/{$ticket->id}/status", ['status' => 'not_a_real_status'])
+            ->patchJson("/api/v1/admin/tickets/{$ticket->id}/status", ['status' => 'not_a_real_status'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
     }

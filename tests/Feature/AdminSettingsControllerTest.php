@@ -17,7 +17,7 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertOk()
             ->assertJsonStructure(['exchange_rate']);
     }
@@ -27,7 +27,7 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertOk()
             ->assertJsonPath('exchange_rate', null);
     }
@@ -38,14 +38,14 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertOk()
             ->assertJsonPath('exchange_rate', 1650.50);
     }
 
     public function test_guest_cannot_get_settings(): void
     {
-        $this->getJson('/api/admin/settings')->assertUnauthorized();
+        $this->getJson('/api/v1/admin/settings')->assertUnauthorized();
     }
 
     public function test_regular_user_cannot_get_settings(): void
@@ -53,7 +53,7 @@ class AdminSettingsControllerTest extends TestCase
         $user = $this->createUser();
 
         $this->actingAs($user)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertForbidden();
     }
 
@@ -64,7 +64,7 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->putJson('/api/admin/settings', ['exchange_rate' => 1500.00])
+            ->putJson('/api/v1/admin/settings', ['exchange_rate' => 1500.00])
             ->assertOk()
             ->assertJsonPath('message', 'Settings updated successfully.');
 
@@ -75,10 +75,10 @@ class AdminSettingsControllerTest extends TestCase
     {
         $admin = $this->createAdmin();
 
-        $this->actingAs($admin)->putJson('/api/admin/settings', ['exchange_rate' => 1750.50]);
+        $this->actingAs($admin)->putJson('/api/v1/admin/settings', ['exchange_rate' => 1750.50]);
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertOk()
             ->assertJsonPath('exchange_rate', 1750.50);
     }
@@ -89,11 +89,11 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->putJson('/api/admin/settings', ['exchange_rate' => null])
+            ->putJson('/api/v1/admin/settings', ['exchange_rate' => null])
             ->assertOk();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/settings')
+            ->getJson('/api/v1/admin/settings')
             ->assertOk()
             ->assertJsonPath('exchange_rate', null);
     }
@@ -103,7 +103,7 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->putJson('/api/admin/settings', ['exchange_rate' => 'abc'])
+            ->putJson('/api/v1/admin/settings', ['exchange_rate' => 'abc'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['exchange_rate']);
     }
@@ -113,14 +113,14 @@ class AdminSettingsControllerTest extends TestCase
         $admin = $this->createAdmin();
 
         $this->actingAs($admin)
-            ->putJson('/api/admin/settings', ['exchange_rate' => -100])
+            ->putJson('/api/v1/admin/settings', ['exchange_rate' => -100])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['exchange_rate']);
     }
 
     public function test_guest_cannot_update_settings(): void
     {
-        $this->putJson('/api/admin/settings', ['exchange_rate' => 1500])->assertUnauthorized();
+        $this->putJson('/api/v1/admin/settings', ['exchange_rate' => 1500])->assertUnauthorized();
     }
 
     public function test_regular_user_cannot_update_settings(): void
@@ -128,7 +128,7 @@ class AdminSettingsControllerTest extends TestCase
         $user = $this->createUser();
 
         $this->actingAs($user)
-            ->putJson('/api/admin/settings', ['exchange_rate' => 1500])
+            ->putJson('/api/v1/admin/settings', ['exchange_rate' => 1500])
             ->assertForbidden();
     }
 
@@ -138,14 +138,14 @@ class AdminSettingsControllerTest extends TestCase
     {
         Setting::set('exchange_rate', '1200.75');
 
-        $this->getJson('/api/config')
+        $this->getJson('/api/v1/config')
             ->assertOk()
             ->assertJsonPath('exchange_rate', 1200.75);
     }
 
     public function test_config_exchange_rate_is_null_when_not_set(): void
     {
-        $this->getJson('/api/config')
+        $this->getJson('/api/v1/config')
             ->assertOk()
             ->assertJsonPath('exchange_rate', null);
     }

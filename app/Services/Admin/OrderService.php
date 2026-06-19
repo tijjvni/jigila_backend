@@ -2,8 +2,11 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\InvoiceType;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\OrderAuditLog;
+use App\Models\User;
 use App\Services\InvoiceService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -28,7 +31,7 @@ class OrderService
         return $order->load(['user', 'invoices']);
     }
 
-    public function updateBid(Order $order, array $data): Order
+    public function updateBid(Order $order, array $data, ?User $actor = null): Order
     {
         $order->update([
             'bid_status'    => $data['bid_status'],
@@ -39,17 +42,30 @@ class OrderService
         // Guard against duplicate: only create if no bid_balance invoice exists yet.
         if ($data['bid_status'] === 'won' && !empty($order->bid_price)) {
             $alreadyIssued = Invoice::where('order_id', $order->id)
-                ->where('type', 'bid_balance')
+                ->where('type', InvoiceType::BidBalance)
                 ->exists();
 
             if (!$alreadyIssued) {
-                $this->invoiceService->create(
+                $balanceInvoice = $this->invoiceService->create(
                     $order->user,
                     $order,
-                    'bid_balance',
+                    InvoiceType::BidBalance,
                     '50% Balance Payment – Auction Bid Confirmed Won',
                     round((float) $order->bid_price * 0.5, 2),
                 );
+
+                OrderAuditLog::create([
+                    'order_id'   => $order->id,
+                    'user_id'    => $actor?->id,
+                    'action'     => 'invoice_generated',
+                    'old_values' => [],
+                    'new_values' => [
+                        'invoice_number' => $balanceInvoice->invoice_number,
+                        'type'           => $balanceInvoice->type,
+                        'amount'         => $balanceInvoice->amount,
+                        'description'    => $balanceInvoice->description,
+                    ],
+                ]);
             }
         }
 

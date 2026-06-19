@@ -3,13 +3,18 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Invoice;
+use App\Models\Ticket;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 /**
  * @property int $id
@@ -21,11 +26,12 @@ use Laravel\Sanctum\HasApiTokens;
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Prunable;
 
     protected $fillable = [
         'name',
@@ -51,9 +57,22 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            $user->orders()->each(fn ($o) => $o->delete());
+            $user->tickets()->each(fn ($t) => $t->delete());
+        });
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
     }
 
     public function invoices(): HasMany
@@ -64,5 +83,36 @@ class User extends Authenticatable
     public function adminRoles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_user')->withTimestamps();
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class)->latest();
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        $this->loadMissing('adminRoles');
+
+        $granted = $this->adminRoles
+            ->flatMap(fn ($role) => $role->permissions ?? [])
+            ->unique()
+            ->all();
+
+        if (in_array($permission, $granted, true)) {
+            return true;
+        }
+
+        // *.manage satisfies *.view on the same prefix
+        if (str_ends_with($permission, '.view')) {
+            return in_array(substr($permission, 0, -5) . '.manage', $granted, true);
+        }
+
+        return false;
+    }
+
+    public function prunable(): Builder
+    {
+        return static::onlyTrashed()->where('deleted_at', '<=', now()->subDays(90));
     }
 }

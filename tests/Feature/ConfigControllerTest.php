@@ -14,7 +14,7 @@ class ConfigControllerTest extends TestCase
 
     public function test_config_endpoint_returns_all_sections(): void
     {
-        $this->getJson('/api/config')
+        $this->getJson('/api/v1/config')
             ->assertStatus(200)
             ->assertJsonStructure([
                 'services'           => [['value', 'label']],
@@ -28,7 +28,7 @@ class ConfigControllerTest extends TestCase
 
     public function test_config_contains_expected_auction_sources(): void
     {
-        $response = $this->getJson('/api/config')->assertStatus(200);
+        $response = $this->getJson('/api/v1/config')->assertStatus(200);
 
         $sources = collect($response->json('auction_sources'))->pluck('value')->all();
         $this->assertEqualsCanonicalizing(AuctionSource::values(), $sources);
@@ -36,7 +36,7 @@ class ConfigControllerTest extends TestCase
 
     public function test_config_contains_expected_order_statuses(): void
     {
-        $response = $this->getJson('/api/config')->assertStatus(200);
+        $response = $this->getJson('/api/v1/config')->assertStatus(200);
 
         $statuses = collect($response->json('order_statuses'))->pluck('value')->all();
         $this->assertEqualsCanonicalizing(OrderStatus::values(), $statuses);
@@ -44,7 +44,7 @@ class ConfigControllerTest extends TestCase
 
     public function test_config_contains_expected_services(): void
     {
-        $response = $this->getJson('/api/config')->assertStatus(200);
+        $response = $this->getJson('/api/v1/config')->assertStatus(200);
 
         $services = collect($response->json('services'))->pluck('value')->all();
         $this->assertEqualsCanonicalizing(ServiceType::values(), $services);
@@ -53,6 +53,6 @@ class ConfigControllerTest extends TestCase
     public function test_config_is_publicly_accessible(): void
     {
         // No auth header — should still return 200
-        $this->getJson('/api/config')->assertStatus(200);
+        $this->getJson('/api/v1/config')->assertStatus(200);
     }
 }

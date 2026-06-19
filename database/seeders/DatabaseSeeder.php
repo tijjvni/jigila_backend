@@ -10,23 +10,27 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(SuperAdminRoleSeeder::class);
+
         User::updateOrCreate(
             ['email' => 'user@jigila.com'],
             [
-                'name'     => 'Jigila User',
-                'password' => Hash::make('password'),
-                'role'     => 'user',
-                'status'   => 'active',
+                'name'               => 'Jigila User',
+                'password'           => Hash::make('password'),
+                'role'               => 'user',
+                'status'             => 'active',
+                'email_verified_at'  => now(),
             ]
         );
 
         User::updateOrCreate(
             ['email' => 'admin@jigila.com'],
             [
-                'name'     => 'Jigila Admin',
-                'password' => Hash::make('password'),
-                'role'     => 'admin',
-                'status'   => 'active',
+                'name'               => 'Jigila Admin',
+                'password'           => Hash::make('password'),
+                'role'               => 'admin',
+                'status'             => 'active',
+                'email_verified_at'  => now(),
             ]
         );
     }

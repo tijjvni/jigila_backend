@@ -23,7 +23,7 @@ class OrderControllerTest extends TestCase
         Order::factory()->create(['user_id' => $user->id]);
         Order::factory()->create(['user_id' => $other->id]);
 
-        $response = $this->actingAs($user)->getJson('/api/orders');
+        $response = $this->actingAs($user)->getJson('/api/v1/orders');
 
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
@@ -34,7 +34,7 @@ class OrderControllerTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         User::factory()->count(2)->create()->each(fn ($u) => Order::factory()->create(['user_id' => $u->id]));
 
-        $response = $this->actingAs($admin)->getJson('/api/orders');
+        $response = $this->actingAs($admin)->getJson('/api/v1/orders');
 
         $response->assertStatus(200);
         $this->assertCount(2, $response->json('data'));
@@ -42,7 +42,7 @@ class OrderControllerTest extends TestCase
 
     public function test_guest_cannot_list_orders(): void
     {
-        $this->getJson('/api/orders')->assertStatus(401);
+        $this->getJson('/api/v1/orders')->assertStatus(401);
     }
 
     // -------------------------------------------------------------------------
@@ -53,7 +53,7 @@ class OrderControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/api/orders', [
+        $response = $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '1HGCM82633A004352',
             'auction_source'    => 'Copart',
             'condition'         => 'Run and Drive',
@@ -74,7 +74,7 @@ class OrderControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->postJson('/api/orders', [])
+            ->postJson('/api/v1/orders', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['vin', 'auction_source', 'condition', 'already_purchased']);
     }
@@ -84,7 +84,7 @@ class OrderControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->postJson('/api/orders', [
+            ->postJson('/api/v1/orders', [
                 'vin'               => '1HGCM82633A004352',
                 'auction_source'    => 'InvalidSource',
                 'condition'         => 'Run and Drive',
@@ -105,7 +105,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->getJson("/api/orders/{$order->id}")
+            ->getJson("/api/v1/orders/{$order->id}")
             ->assertStatus(200)
             ->assertJsonPath('data.id', (string) $order->id);
     }
@@ -116,7 +116,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create();
 
         $this->actingAs($user)
-            ->getJson("/api/orders/{$order->id}")
+            ->getJson("/api/v1/orders/{$order->id}")
             ->assertStatus(403);
     }
 
@@ -126,7 +126,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create();
 
         $this->actingAs($admin)
-            ->getJson("/api/orders/{$order->id}")
+            ->getJson("/api/v1/orders/{$order->id}")
             ->assertStatus(200);
     }
 
@@ -140,7 +140,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create(['user_id' => $user->id, 'status' => 'pending']);
 
         $this->actingAs($user)
-            ->putJson("/api/orders/{$order->id}", ['status' => 'processing'])
+            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'processing'])
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'processing');
     }
@@ -151,7 +151,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create();
 
         $this->actingAs($user)
-            ->putJson("/api/orders/{$order->id}", ['status' => 'processing'])
+            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'processing'])
             ->assertStatus(403);
     }
 
@@ -161,7 +161,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->putJson("/api/orders/{$order->id}", ['status' => 'flying'])
+            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'flying'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
     }
@@ -176,11 +176,11 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->deleteJson("/api/orders/{$order->id}")
+            ->deleteJson("/api/v1/orders/{$order->id}")
             ->assertStatus(200)
             ->assertJson(['message' => 'Order deleted.']);
 
-        $this->assertDatabaseMissing('orders', ['id' => $order->id]);
+        $this->assertSoftDeleted('orders', ['id' => $order->id]);
     }
 
     public function test_user_cannot_delete_another_users_order(): void
@@ -189,7 +189,7 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create();
 
         $this->actingAs($user)
-            ->deleteJson("/api/orders/{$order->id}")
+            ->deleteJson("/api/v1/orders/{$order->id}")
             ->assertStatus(403);
     }
 }

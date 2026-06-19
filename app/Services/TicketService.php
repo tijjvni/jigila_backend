@@ -5,28 +5,28 @@ namespace App\Services;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class TicketService
 {
     public function __construct(private NotificationService $notifications) {}
 
-    public function list(User $user): Collection
+    public function list(User $user, int $perPage = 20): LengthAwarePaginator
     {
         return Ticket::with(['user'])
             ->withCount('messages')
             ->where('user_id', $user->id)
             ->latest()
-            ->get();
+            ->paginate($perPage);
     }
 
-    public function listAll(): Collection
+    public function listAll(int $perPage = 20): LengthAwarePaginator
     {
         return Ticket::with(['user'])
             ->withCount('messages')
             ->latest()
-            ->get();
+            ->paginate($perPage);
     }
 
     public function stats(): array
@@ -70,6 +70,13 @@ class TicketService
         });
 
         $this->notifications->sendTicketCreated($ticket->load('user'));
+
+        $this->notifications->notifyAdmins(
+            'new_ticket',
+            'New Support Ticket',
+            "Customer {$user->name} opened ticket #{$ticket->ticket_number}: {$subject}",
+            ['ticket_id' => $ticket->id],
+        );
 
         return $ticket;
     }

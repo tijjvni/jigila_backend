@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuctionSource;
-use App\Enums\DeparturePort;
-use App\Enums\DestinationPort;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\ServiceType;
@@ -21,6 +19,8 @@ class ConfigController extends Controller
 
     public function __invoke(): JsonResponse
     {
+        $freightPorts = config('freight');
+
         return $this->okResponse([
             'services' => self::toOptions(ServiceType::values(), ['Trucking', 'Shipping']),
 
@@ -36,19 +36,44 @@ class ConfigController extends Controller
                 ['Run and Drive', 'Non-Runner', 'Forklift']
             ),
 
+            'vehicle_types' => collect($freightPorts['vehicle_types'])
+                ->map(fn ($label, $value) => compact('value', 'label'))
+                ->values()
+                ->all(),
+
             'user_roles' => [
                 ['value' => 'user',  'label' => 'Portal User'],
                 ['value' => 'admin', 'label' => 'Admin'],
             ],
 
-            'permission_keys' => self::toOptions(
-                Permission::values(),
-                ['Dashboard', 'Budget Reports', 'KPI Tracking', 'User Management']
-            ),
+            'permission_keys' => collect(Permission::labels())
+                ->map(fn ($label, $value) => compact('value', 'label'))
+                ->values()
+                ->all(),
 
-            'departure_ports'   => DeparturePort::options(),
+            'departure_ports' => collect($freightPorts['departure_ports'])
+                ->map(fn ($d, $v) => ['value' => $v, 'label' => $d['label']])
+                ->values()
+                ->all(),
 
-            'destination_ports' => DestinationPort::options(),
+            'destination_ports' => collect($freightPorts['destination_ports'])
+                ->map(fn ($d, $v) => ['value' => $v, 'label' => $d['label']])
+                ->values()
+                ->all(),
+
+            'freight_rates' => [
+                'range_pct'                    => $freightPorts['range_pct'],
+                'trucking_vehicle_multipliers' => $freightPorts['trucking_vehicle_multipliers'],
+                'trucking_condition_surcharges' => $freightPorts['trucking_condition_surcharges'],
+                'trucking_sedan_rates'         => (function () use ($freightPorts) {
+                    $portKeys = array_keys($freightPorts['departure_ports']);
+                    return collect($freightPorts['trucking_sedan_rates'])
+                        ->map(fn ($rates) => array_combine($portKeys, $rates))
+                        ->all();
+                })(),
+                'departure_ports'              => $freightPorts['departure_ports'],
+                'destination_ports'            => $freightPorts['destination_ports'],
+            ],
 
             'pickup_locations' => [
                 ['value' => 'al', 'label' => 'Alabama (AL)'],

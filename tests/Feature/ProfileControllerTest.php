@@ -15,7 +15,7 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->getJson('/api/profile')
+            ->getJson('/api/v1/profile')
             ->assertStatus(200)
             ->assertJsonStructure(['data' => ['id', 'name', 'email', 'phone', 'role']])
             ->assertJsonPath('data.email', $user->email);
@@ -23,7 +23,7 @@ class ProfileControllerTest extends TestCase
 
     public function test_guest_cannot_view_profile(): void
     {
-        $this->getJson('/api/profile')->assertStatus(401);
+        $this->getJson('/api/v1/profile')->assertStatus(401);
     }
 
     public function test_user_can_update_name_and_phone(): void
@@ -31,7 +31,7 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->putJson('/api/profile', ['name' => 'Updated Name', 'phone' => '09011111111'])
+            ->putJson('/api/v1/profile', ['name' => 'Updated Name', 'phone' => '09011111111'])
             ->assertStatus(200)
             ->assertJsonPath('data.name', 'Updated Name')
             ->assertJsonPath('data.phone', '09011111111');
@@ -42,7 +42,7 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->putJson('/api/profile', ['email' => 'new@example.com'])
+            ->putJson('/api/v1/profile', ['email' => 'new@example.com'])
             ->assertStatus(200)
             ->assertJsonPath('data.email', 'new@example.com');
     }
@@ -53,7 +53,7 @@ class ProfileControllerTest extends TestCase
         $user     = User::factory()->create();
 
         $this->actingAs($user)
-            ->putJson('/api/profile', ['email' => 'taken@example.com'])
+            ->putJson('/api/v1/profile', ['email' => 'taken@example.com'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
@@ -63,7 +63,7 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create(['email' => 'mine@example.com']);
 
         $this->actingAs($user)
-            ->putJson('/api/profile', ['email' => 'mine@example.com'])
+            ->putJson('/api/v1/profile', ['email' => 'mine@example.com'])
             ->assertStatus(200);
     }
 
@@ -72,7 +72,7 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->putJson('/api/profile', [
+            ->putJson('/api/v1/profile', [
                 'password'              => 'newpassword',
                 'password_confirmation' => 'mismatch',
             ])

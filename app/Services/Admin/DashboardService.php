@@ -11,35 +11,41 @@ class DashboardService
 {
     public function stats(): array
     {
-        return Cache::remember('dashboard.stats', now()->addMinutes(5), function () {
-            $activeShipmentStatuses = ['processing', 'in_transit', 'at_port'];
+        $activeShipmentStatuses = ['processing', 'in_transit', 'at_port'];
 
+        // Cache only scalar/array data — never Eloquent models, which can't be
+        // safely serialized/unserialized by PHP's cache driver.
+        $stats = Cache::remember('dashboard.stats', now()->addMinutes(5), function () use ($activeShipmentStatuses) {
             return [
                 // Stat cards
-                'total_users'        => User::where('role', 'user')->count(),
-                'total_orders'       => Order::count(),
-                'active_shipments'   => Order::whereIn('status', $activeShipmentStatuses)->count(),
-                'total_revenue'      => (float) Order::whereNotNull('bid_price')->sum(DB::raw('CAST(bid_price AS REAL)')),
+                'total_users'           => User::where('role', 'user')->count(),
+                'total_orders'          => Order::count(),
+                'active_shipments'      => Order::whereIn('status', $activeShipmentStatuses)->count(),
+                'total_revenue'         => (float) Order::whereNotNull('bid_price')->sum(DB::raw('CAST(bid_price AS REAL)')),
 
-                // Chart: orders by status
-                'orders_by_status'   => Order::selectRaw('status, count(*) as count')
+                // Chart: orders by status — toArray() gives a plain PHP array, not a Collection
+                'orders_by_status'      => Order::selectRaw('status, count(*) as count')
                     ->groupBy('status')
-                    ->pluck('count', 'status'),
+                    ->pluck('count', 'status')
+                    ->toArray(),
 
                 // Chart: orders per month (current year)
-                'orders_by_month'    => $this->ordersByMonth(),
+                'orders_by_month'       => $this->ordersByMonth(),
 
                 // Chart: revenue by service
-                'revenue_by_service' => $this->revenueByService(),
+                'revenue_by_service'    => $this->revenueByService(),
 
                 // Metrics
                 'order_completion_rate' => $this->completionRate(),
                 'average_order_value'   => $this->averageOrderValue(),
-
-                // Table
-                'recent_orders'      => Order::with(['user', 'invoice'])->latest()->limit(10)->get(),
             ];
         });
+
+        // Fetch recent orders fresh every request — Eloquent models with loaded
+        // relationships cannot be safely round-tripped through the cache serializer.
+        $stats['recent_orders'] = Order::with(['user', 'invoice'])->latest()->limit(10)->get();
+
+        return $stats;
     }
 
     private function ordersByMonth(): array

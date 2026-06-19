@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\InvoiceType;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -15,22 +17,29 @@ class InvoiceService
     public function __construct(private PaystackService $paystack) {}
 
     public function create(
-        User    $user,
-        ?Order  $order,
-        string  $type,
+        User        $user,
+        ?Order      $order,
+        InvoiceType $type,
         string  $description,
         float   $amount,
         array   $metadata = []
     ): Invoice {
         $paymentUrl       = null;
         $paymentReference = null;
+        $exchangeRate     = (float) Setting::get('exchange_rate', 0);
 
         try {
-            $callbackUrl      = config('services.paystack.callback_url', url('/invoice'));
-            $paystackRef      = 'jig_' . Str::uuid()->toString();
+            if ($exchangeRate <= 0) {
+                throw new \RuntimeException('Exchange rate not configured. Admin must set the NGN/USD rate before invoices can be paid.');
+            }
+
+            $callbackUrl = config('services.paystack.callback_url', url('/invoice'));
+            $paystackRef = 'jig_' . Str::uuid()->toString();
+            // Invoice amount is stored in USD; Paystack bills in NGN kobo.
+            $amountKobo = (int) round($amount * $exchangeRate * 100);
             $data = $this->paystack->initializeTransaction(
                 $user->email,
-                (int) round($amount * 100),
+                $amountKobo,
                 $paystackRef,
                 $callbackUrl,
             );
@@ -38,9 +47,10 @@ class InvoiceService
             $paymentReference = $data['reference'];
         } catch (\Throwable $e) {
             Log::error('Paystack initialization failed', [
-                'user_id' => $user->id,
-                'amount'  => $amount,
-                'error'   => $e->getMessage(),
+                'user_id'       => $user->id,
+                'amount_usd'    => $amount,
+                'exchange_rate' => $exchangeRate ?? 0,
+                'error'         => $e->getMessage(),
             ]);
         }
 

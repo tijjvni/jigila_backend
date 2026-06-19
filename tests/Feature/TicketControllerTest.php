@@ -17,7 +17,7 @@ class TicketControllerTest extends TestCase
 
     public function test_unauthenticated_cannot_list_tickets(): void
     {
-        $this->getJson('/api/tickets')->assertStatus(401);
+        $this->getJson('/api/v1/tickets')->assertStatus(401);
     }
 
     // ── index ─────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ class TicketControllerTest extends TestCase
         Ticket::factory()->count(3)->create(['user_id' => $other->id]);
 
         $this->actingAs($user)
-            ->getJson('/api/tickets')
+            ->getJson('/api/v1/tickets')
             ->assertOk()
             ->assertJsonCount(2, 'data');
     }
@@ -43,7 +43,7 @@ class TicketControllerTest extends TestCase
         $user = $this->createUser();
 
         $response = $this->actingAs($user)
-            ->postJson('/api/tickets', [
+            ->postJson('/api/v1/tickets', [
                 'subject' => 'Shipment delay',
                 'body'    => 'My car has not moved in 2 weeks.',
             ])
@@ -57,13 +57,13 @@ class TicketControllerTest extends TestCase
             'subject' => 'Shipment delay',
         ]);
 
-        Mail::assertSent(TicketCreatedMail::class, fn ($m) => $m->hasTo($user->email));
+        Mail::assertQueued(TicketCreatedMail::class, fn ($m) => $m->hasTo($user->email));
     }
 
     public function test_create_ticket_requires_subject_and_body(): void
     {
         $this->actingAs($this->createUser())
-            ->postJson('/api/tickets', [])
+            ->postJson('/api/v1/tickets', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['subject', 'body']);
     }
@@ -77,7 +77,7 @@ class TicketControllerTest extends TestCase
         TicketMessage::factory()->count(2)->create(['ticket_id' => $ticket->id, 'user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->getJson("/api/tickets/{$ticket->id}")
+            ->getJson("/api/v1/tickets/{$ticket->id}")
             ->assertOk()
             ->assertJsonPath('data.id', (string) $ticket->id)
             ->assertJsonStructure(['data' => ['messages']]);
@@ -89,7 +89,7 @@ class TicketControllerTest extends TestCase
         $ticket = Ticket::factory()->create(['user_id' => $other->id]);
 
         $this->actingAs($this->createUser())
-            ->getJson("/api/tickets/{$ticket->id}")
+            ->getJson("/api/v1/tickets/{$ticket->id}")
             ->assertStatus(403);
     }
 
@@ -101,7 +101,7 @@ class TicketControllerTest extends TestCase
         $ticket = Ticket::factory()->open()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->postJson("/api/tickets/{$ticket->id}/messages", ['body' => 'Any update?'])
+            ->postJson("/api/v1/tickets/{$ticket->id}/messages", ['body' => 'Any update?'])
             ->assertStatus(201)
             ->assertJsonPath('data.body', 'Any update?');
 
@@ -117,7 +117,7 @@ class TicketControllerTest extends TestCase
         $ticket = Ticket::factory()->open()->create(['user_id' => $other->id]);
 
         $this->actingAs($this->createUser())
-            ->postJson("/api/tickets/{$ticket->id}/messages", ['body' => 'Sneaky'])
+            ->postJson("/api/v1/tickets/{$ticket->id}/messages", ['body' => 'Sneaky'])
             ->assertStatus(403);
     }
 
@@ -127,7 +127,7 @@ class TicketControllerTest extends TestCase
         $ticket = Ticket::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->postJson("/api/tickets/{$ticket->id}/messages", [])
+            ->postJson("/api/v1/tickets/{$ticket->id}/messages", [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['body']);
     }
