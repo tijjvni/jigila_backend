@@ -87,7 +87,7 @@ class OrderServiceTest extends TestCase
 
         $this->service->delete($order);
 
-        $this->assertDatabaseMissing('orders', ['id' => $order->id]);
+        $this->assertSoftDeleted('orders', ['id' => $order->id]);
     }
 
     public function test_authorize_aborts_when_user_does_not_own_order(): void

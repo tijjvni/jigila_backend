@@ -29,7 +29,7 @@ class UpdateOrderLocationTest extends TestCase
     {
         $order = $this->order();
 
-        $this->patchJson("/api/admin/orders/{$order->id}/location", [
+        $this->patchJson("/api/v1/admin/orders/{$order->id}/location", [
             'pickup_location' => 'Dallas, TX',
         ])->assertStatus(401);
     }
@@ -40,7 +40,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($user)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'pickup_location' => 'Dallas, TX',
             ])->assertStatus(403);
     }
@@ -53,7 +53,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'pickup_location' => 'Dallas, TX',
             ])->assertStatus(200);
 
@@ -69,7 +69,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'departure_port' => DeparturePort::HoustonTX->value,
             ])->assertStatus(200);
 
@@ -85,7 +85,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'destination_port' => DestinationPort::TinCanLagos->value,
             ])->assertStatus(200);
 
@@ -101,7 +101,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'pickup_location'  => 'Atlanta, GA',
                 'departure_port'   => DeparturePort::SavannahGA->value,
                 'destination_port' => DestinationPort::LagosApapa->value,
@@ -123,7 +123,7 @@ class UpdateOrderLocationTest extends TestCase
         foreach ($ports as $port) {
             $order = $this->order();
             $this->actingAs($admin)
-                ->patchJson("/api/admin/orders/{$order->id}/location", [
+                ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                     'departure_port' => $port,
                 ])->assertStatus(200, "Expected 200 for departure_port={$port}");
         }
@@ -137,7 +137,7 @@ class UpdateOrderLocationTest extends TestCase
         foreach ($ports as $port) {
             $order = $this->order();
             $this->actingAs($admin)
-                ->patchJson("/api/admin/orders/{$order->id}/location", [
+                ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                     'destination_port' => $port,
                 ])->assertStatus(200, "Expected 200 for destination_port={$port}");
         }
@@ -151,7 +151,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'departure_port' => 'new_orleans_la',
             ])->assertStatus(422)
             ->assertJsonValidationErrors(['departure_port']);
@@ -163,7 +163,7 @@ class UpdateOrderLocationTest extends TestCase
         $order = $this->order();
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
                 'destination_port' => 'mombasa_kenya',
             ])->assertStatus(422)
             ->assertJsonValidationErrors(['destination_port']);
@@ -176,7 +176,7 @@ class UpdateOrderLocationTest extends TestCase
 
         // All fields are nullable — empty body should return 200
         $this->actingAs($admin)
-            ->patchJson("/api/admin/orders/{$order->id}/location", [])
+            ->patchJson("/api/v1/admin/orders/{$order->id}/location", [])
             ->assertStatus(200);
     }
 
@@ -185,7 +185,7 @@ class UpdateOrderLocationTest extends TestCase
         $admin = $this->adminUser();
 
         $this->actingAs($admin)
-            ->patchJson('/api/admin/orders/99999/location', [
+            ->patchJson('/api/v1/admin/orders/99999/location', [
                 'pickup_location' => 'Somewhere',
             ])->assertStatus(404);
     }

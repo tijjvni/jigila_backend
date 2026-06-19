@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
  * @property int $user_id
  * @property int|null $order_id
  * @property string $invoice_number
- * @property string $type
+ * @property InvoiceType $type
  * @property string $description
  * @property float $amount
  * @property string $status
@@ -22,10 +26,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 class Invoice extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, Prunable;
 
     protected $fillable = [
         'user_id',
@@ -45,6 +50,7 @@ class Invoice extends Model
     protected function casts(): array
     {
         return [
+            'type'     => InvoiceType::class,
             'amount'   => 'decimal:2',
             'paid_at'  => 'datetime',
             'due_date' => 'date',
@@ -60,5 +66,10 @@ class Invoice extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function prunable(): Builder
+    {
+        return static::onlyTrashed()->where('deleted_at', '<=', now()->subDays(90));
     }
 }

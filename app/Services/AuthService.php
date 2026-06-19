@@ -16,6 +16,12 @@ class AuthService
     {
         $user = User::create($data);
         $this->notifications->sendWelcome($user);
+
+        if (app()->isLocal()) {
+            $user->markEmailAsVerified();
+        } else {
+            $user->sendEmailVerificationNotification();
+        }
     }
 
     public function login(array $data): array
@@ -29,7 +35,7 @@ class AuthService
         }
 
         $user->tokens()->delete();
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'], now()->addHours(8))->plainTextToken;
 
         return ['token' => $token, 'user' => $user];
     }

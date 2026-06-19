@@ -33,7 +33,7 @@ class BidInvoiceSplitTest extends TestCase
     {
         $user = $this->customer();
 
-        $this->actingAs($user)->postJson('/api/orders', [
+        $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '1HGCM82633A004352',
             'auction_source'    => 'Copart',
             'condition'         => 'Run and Drive',
@@ -54,7 +54,7 @@ class BidInvoiceSplitTest extends TestCase
     {
         $user = $this->customer();
 
-        $this->actingAs($user)->postJson('/api/orders', [
+        $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '2HGCM82633A004353',
             'auction_source'    => 'IAAI',
             'condition'         => 'Non-Runner',
@@ -72,7 +72,7 @@ class BidInvoiceSplitTest extends TestCase
     {
         $user = $this->customer();
 
-        $this->actingAs($user)->postJson('/api/orders', [
+        $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '3HGCM82633A004354',
             'auction_source'    => 'Copart',
             'condition'         => 'Run and Drive',
@@ -91,7 +91,7 @@ class BidInvoiceSplitTest extends TestCase
         // already_purchased=true with required fields means no bid_price path is taken
         $user = $this->customer();
 
-        $this->actingAs($user)->postJson('/api/orders', [
+        $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '4HGCM82633A004355',
             'auction_source'    => 'Copart',
             'condition'         => 'Run and Drive',
@@ -109,7 +109,7 @@ class BidInvoiceSplitTest extends TestCase
     {
         $user = $this->customer();
 
-        $this->actingAs($user)->postJson('/api/orders', [
+        $this->actingAs($user)->postJson('/api/v1/orders', [
             'vin'               => '5HGCM82633A004356',
             'auction_source'    => 'Copart',
             'condition'         => 'Run and Drive',
@@ -132,7 +132,7 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'won',
         ])->assertStatus(200);
 
@@ -152,7 +152,7 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'won',
         ])->assertStatus(200);
 
@@ -169,8 +169,8 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", ['bid_status' => 'won']);
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", ['bid_status' => 'won']);
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", ['bid_status' => 'won']);
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", ['bid_status' => 'won']);
 
         $count = Invoice::where('order_id', $order->id)->where('type', 'bid_balance')->count();
         $this->assertEquals(1, $count);
@@ -184,7 +184,7 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'lost',
         ])->assertStatus(200);
 
@@ -202,7 +202,7 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status'    => 'out_bid',
             'out_bid_price' => '9500',
         ])->assertStatus(200);
@@ -218,7 +218,7 @@ class BidInvoiceSplitTest extends TestCase
         $admin = $this->admin();
         $order = Order::factory()->create(['bid_price' => null]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'won',
         ])->assertStatus(200);
 
@@ -238,7 +238,7 @@ class BidInvoiceSplitTest extends TestCase
             'already_purchased' => false,
         ]);
 
-        $this->actingAs($admin)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($admin)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'won',
         ])->assertStatus(200);
 
@@ -254,7 +254,7 @@ class BidInvoiceSplitTest extends TestCase
         $user  = $this->customer();
         $order = Order::factory()->create(['user_id' => $user->id, 'bid_price' => '5000']);
 
-        $this->actingAs($user)->patchJson("/api/admin/orders/{$order->id}/bid", [
+        $this->actingAs($user)->patchJson("/api/v1/admin/orders/{$order->id}/bid", [
             'bid_status' => 'won',
         ])->assertStatus(403);
     }

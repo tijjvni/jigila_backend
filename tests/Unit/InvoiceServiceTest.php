@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Enums\InvoiceType;
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\InvoiceService;
 use App\Services\PaystackService;
@@ -42,10 +44,11 @@ class InvoiceServiceTest extends TestCase
 
     public function test_create_persists_invoice_with_correct_fields(): void
     {
+        Setting::set('exchange_rate', 1600);
         $user    = User::factory()->create();
         $service = $this->makeService();
 
-        $invoice = $service->create($user, null, 'service', 'Shipping fee', 500.00);
+        $invoice = $service->create($user, null, InvoiceType::Service, 'Shipping fee', 500.00);
 
         $this->assertDatabaseHas('invoices', [
             'user_id'     => $user->id,
@@ -58,8 +61,9 @@ class InvoiceServiceTest extends TestCase
 
     public function test_create_stores_paystack_url_and_reference(): void
     {
+        Setting::set('exchange_rate', 1600);
         $user    = User::factory()->create();
-        $invoice = $this->makeService()->create($user, null, 'service', 'Fee', 100.00);
+        $invoice = $this->makeService()->create($user, null, InvoiceType::Service, 'Fee', 100.00);
 
         $this->assertNotNull($invoice->payment_url);
         $this->assertNotNull($invoice->payment_reference);
@@ -67,8 +71,9 @@ class InvoiceServiceTest extends TestCase
 
     public function test_paystack_reference_differs_from_invoice_number(): void
     {
+        Setting::set('exchange_rate', 1600);
         $user    = User::factory()->create();
-        $invoice = $this->makeService()->create($user, null, 'service', 'Fee', 100.00);
+        $invoice = $this->makeService()->create($user, null, InvoiceType::Service, 'Fee', 100.00);
 
         $this->assertNotEquals($invoice->invoice_number, $invoice->payment_reference);
         $this->assertStringStartsWith('INV-', $invoice->invoice_number);
@@ -80,11 +85,26 @@ class InvoiceServiceTest extends TestCase
         $user    = User::factory()->create();
         $service = $this->makeService($this->mockPaystack(succeed: false));
 
-        $invoice = $service->create($user, null, 'service', 'Fee', 100.00);
+        $invoice = $service->create($user, null, InvoiceType::Service, 'Fee', 100.00);
 
         $this->assertDatabaseHas('invoices', ['user_id' => $user->id, 'status' => 'pending']);
         $this->assertNull($invoice->payment_url);
         $this->assertNull($invoice->payment_reference);
+    }
+
+    public function test_paystack_receives_amount_in_ngn_kobo(): void
+    {
+        Setting::set('exchange_rate', 1600);
+        $user = User::factory()->create();
+
+        $paystack = Mockery::mock(PaystackService::class);
+        // $100 USD × 1600 rate × 100 kobo = 16,000,000 kobo
+        $paystack->shouldReceive('initializeTransaction')
+            ->with($user->email, 16_000_000, Mockery::any(), Mockery::any())
+            ->once()
+            ->andReturn(['authorization_url' => 'https://paystack.com/pay/x', 'reference' => 'jig_x']);
+
+        $this->makeService($paystack)->create($user, null, InvoiceType::Service, 'Fee', 100.00);
     }
 
     // ─── list ─────────────────────────────────────────────────────────────────

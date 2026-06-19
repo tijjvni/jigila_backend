@@ -60,6 +60,7 @@ class TicketServiceTest extends TestCase
         $user          = $this->createUser();
         $notifications = Mockery::mock(NotificationService::class);
         $notifications->shouldReceive('sendTicketCreated')->once();
+        $notifications->shouldReceive('notifyAdmins')->once();
         $service = new TicketService($notifications);
 
         $service->create($user, 'Sub', 'Body');

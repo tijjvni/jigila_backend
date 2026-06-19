@@ -15,6 +15,7 @@ class OrderResource extends JsonResource
             'stock_id'          => $this->stock_id,
             'auction_source'    => $this->auction_source,
             'condition'         => $this->condition,
+            'vehicle_type'      => $this->vehicle_type,
             'already_purchased' => $this->already_purchased,
             'bid_price'         => $this->bid_price,
             'vehicle_stock_no'  => $this->vehicle_stock_no,

@@ -26,16 +26,16 @@ class AdminUserControllerTest extends TestCase
 
     public function test_guest_cannot_access_admin_users_endpoints(): void
     {
-        $this->getJson('/api/admin/users')->assertStatus(401);
-        $this->postJson('/api/admin/users', [])->assertStatus(401);
+        $this->getJson('/api/v1/admin/users')->assertStatus(401);
+        $this->postJson('/api/v1/admin/users', [])->assertStatus(401);
     }
 
     public function test_regular_user_cannot_access_admin_users_endpoints(): void
     {
         $user = $this->regularUser();
 
-        $this->actingAs($user)->getJson('/api/admin/users')->assertStatus(403);
-        $this->actingAs($user)->postJson('/api/admin/users', [])->assertStatus(403);
+        $this->actingAs($user)->getJson('/api/v1/admin/users')->assertStatus(403);
+        $this->actingAs($user)->postJson('/api/v1/admin/users', [])->assertStatus(403);
     }
 
     // -------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class AdminUserControllerTest extends TestCase
         $admin = $this->admin();
         User::factory()->count(3)->create();
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/users');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/users');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['data', 'meta']);
@@ -62,7 +62,7 @@ class AdminUserControllerTest extends TestCase
         User::factory()->count(2)->create(['role' => 'user']);
         User::factory()->create(['role' => 'admin']);
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/users?type=admin');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/users?type=admin');
 
         // 2 admins total (the fixture admin + the one we created)
         $this->assertEquals(2, $response->json('meta.total'));
@@ -74,7 +74,7 @@ class AdminUserControllerTest extends TestCase
         User::factory()->count(2)->create(['status' => 'active']);
         User::factory()->create(['status' => 'archived']);
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/users?status=archived');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/users?status=archived');
 
         $this->assertEquals(1, $response->json('meta.total'));
     }
@@ -85,7 +85,7 @@ class AdminUserControllerTest extends TestCase
         User::factory()->create(['name' => 'Alice Wonderland']);
         User::factory()->create(['name' => 'Bob Builder']);
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/users?search=Alice');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/users?search=Alice');
 
         $this->assertEquals(1, $response->json('meta.total'));
         $this->assertStringContainsString('Alice', $response->json('data.0.name'));
@@ -97,7 +97,7 @@ class AdminUserControllerTest extends TestCase
         User::factory()->create(['email' => 'unique-search@example.com']);
         User::factory()->create(['email' => 'other@example.com']);
 
-        $response = $this->actingAs($admin)->getJson('/api/admin/users?search=unique-search');
+        $response = $this->actingAs($admin)->getJson('/api/v1/admin/users?search=unique-search');
 
         $this->assertEquals(1, $response->json('meta.total'));
     }
@@ -110,7 +110,7 @@ class AdminUserControllerTest extends TestCase
     {
         $admin = $this->admin();
 
-        $response = $this->actingAs($admin)->postJson('/api/admin/users', [
+        $response = $this->actingAs($admin)->postJson('/api/v1/admin/users', [
             'first_name' => 'Jane',
             'last_name'  => 'Doe',
             'email'      => 'jane.doe@example.com',
@@ -131,7 +131,7 @@ class AdminUserControllerTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->postJson('/api/admin/users', [])
+            ->postJson('/api/v1/admin/users', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['first_name', 'last_name', 'email', 'phone', 'role']);
     }
@@ -142,7 +142,7 @@ class AdminUserControllerTest extends TestCase
         User::factory()->create(['email' => 'taken@example.com']);
 
         $this->actingAs($admin)
-            ->postJson('/api/admin/users', [
+            ->postJson('/api/v1/admin/users', [
                 'first_name' => 'Test',
                 'last_name'  => 'User',
                 'email'      => 'taken@example.com',
@@ -158,7 +158,7 @@ class AdminUserControllerTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->postJson('/api/admin/users', [
+            ->postJson('/api/v1/admin/users', [
                 'first_name' => 'Test',
                 'last_name'  => 'User',
                 'email'      => 'test@example.com',
@@ -179,7 +179,7 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create();
 
         $this->actingAs($admin)
-            ->getJson("/api/admin/users/{$user->id}")
+            ->getJson("/api/v1/admin/users/{$user->id}")
             ->assertStatus(200)
             ->assertJsonPath('data.id', (string) $user->id)
             ->assertJsonStructure(['data' => ['id', 'name', 'email', 'phone', 'role', 'status', 'admin_roles']]);
@@ -190,7 +190,7 @@ class AdminUserControllerTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)
-            ->getJson('/api/admin/users/99999')
+            ->getJson('/api/v1/admin/users/99999')
             ->assertStatus(404);
     }
 
@@ -204,7 +204,7 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create(['name' => 'Old Name']);
 
         $this->actingAs($admin)
-            ->putJson("/api/admin/users/{$user->id}", [
+            ->putJson("/api/v1/admin/users/{$user->id}", [
                 'first_name' => 'New',
                 'last_name'  => 'Name',
             ])
@@ -218,7 +218,7 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create(['role' => 'user']);
 
         $this->actingAs($admin)
-            ->putJson("/api/admin/users/{$user->id}", ['role' => 'admin'])
+            ->putJson("/api/v1/admin/users/{$user->id}", ['role' => 'admin'])
             ->assertStatus(200)
             ->assertJsonPath('data.role', 'admin');
     }
@@ -230,7 +230,7 @@ class AdminUserControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($admin)
-            ->putJson("/api/admin/users/{$user->id}", ['email' => 'taken@example.com'])
+            ->putJson("/api/v1/admin/users/{$user->id}", ['email' => 'taken@example.com'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
@@ -241,7 +241,7 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create(['email' => 'mine@example.com']);
 
         $this->actingAs($admin)
-            ->putJson("/api/admin/users/{$user->id}", ['email' => 'mine@example.com'])
+            ->putJson("/api/v1/admin/users/{$user->id}", ['email' => 'mine@example.com'])
             ->assertStatus(200);
     }
 
@@ -255,7 +255,7 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create(['status' => 'active']);
 
         $this->actingAs($admin)
-            ->patchJson("/api/admin/users/{$user->id}/archive")
+            ->patchJson("/api/v1/admin/users/{$user->id}/archive")
             ->assertStatus(200)
             ->assertJsonPath('data.status', 'archived');
 
@@ -272,10 +272,10 @@ class AdminUserControllerTest extends TestCase
         $user  = User::factory()->create();
 
         $this->actingAs($admin)
-            ->deleteJson("/api/admin/users/{$user->id}")
+            ->deleteJson("/api/v1/admin/users/{$user->id}")
             ->assertStatus(200)
             ->assertJson(['message' => 'User deleted successfully.']);
 
-        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
     }
 }

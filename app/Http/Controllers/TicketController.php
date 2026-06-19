@@ -17,7 +17,8 @@ class TicketController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return $this->okResponse(TicketResource::collection($this->ticketService->list($request->user())));
+        $paginated = $this->ticketService->list($request->user());
+        return $this->okResponse(TicketResource::collection($paginated));
     }
 
     public function store(StoreTicketRequest $request): JsonResponse

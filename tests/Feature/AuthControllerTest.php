@@ -18,7 +18,7 @@ class AuthControllerTest extends TestCase
 
     public function test_user_can_register(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name'                  => 'John Doe',
             'email'                 => 'john@example.com',
             'phone'                 => '08012345678',
@@ -32,7 +32,7 @@ class AuthControllerTest extends TestCase
 
     public function test_register_requires_all_fields(): void
     {
-        $response = $this->postJson('/api/auth/register', []);
+        $response = $this->postJson('/api/v1/auth/register', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'email', 'phone', 'password']);
@@ -42,7 +42,7 @@ class AuthControllerTest extends TestCase
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name'                  => 'Jane',
             'email'                 => 'taken@example.com',
             'phone'                 => '080',
@@ -55,7 +55,7 @@ class AuthControllerTest extends TestCase
 
     public function test_register_rejects_password_mismatch(): void
     {
-        $response = $this->postJson('/api/auth/register', [
+        $response = $this->postJson('/api/v1/auth/register', [
             'name'                  => 'Jane',
             'email'                 => 'jane@example.com',
             'phone'                 => '080',
@@ -74,7 +74,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create(['password' => Hash::make('secret123')]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email'    => $user->email,
             'password' => 'secret123',
         ]);
@@ -87,7 +87,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create(['password' => Hash::make('correct')]);
 
-        $response = $this->postJson('/api/auth/login', [
+        $response = $this->postJson('/api/v1/auth/login', [
             'email'    => $user->email,
             'password' => 'wrong',
         ]);
@@ -97,7 +97,7 @@ class AuthControllerTest extends TestCase
 
     public function test_login_requires_email_and_password(): void
     {
-        $response = $this->postJson('/api/auth/login', []);
+        $response = $this->postJson('/api/v1/auth/login', []);
 
         $response->assertStatus(422)->assertJsonValidationErrors(['email', 'password']);
     }
@@ -110,14 +110,14 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/api/auth/logout');
+        $response = $this->actingAs($user)->postJson('/api/v1/auth/logout');
 
         $response->assertStatus(200)->assertJson(['message' => 'Logged out successfully.']);
     }
 
     public function test_guest_cannot_logout(): void
     {
-        $this->postJson('/api/auth/logout')->assertStatus(401);
+        $this->postJson('/api/v1/auth/logout')->assertStatus(401);
     }
 
     // -------------------------------------------------------------------------
@@ -128,7 +128,7 @@ class AuthControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
+        $response = $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->email]);
 
         $response->assertStatus(200)
             ->assertJsonFragment(['message' => 'OTP sent to your email.']);
@@ -141,7 +141,7 @@ class AuthControllerTest extends TestCase
         config(['app.debug' => true]);
 
         $user     = User::factory()->create();
-        $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
+        $response = $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->email]);
 
         $response->assertStatus(200);
         $this->assertNotNull($response->json('otp'));
@@ -153,7 +153,7 @@ class AuthControllerTest extends TestCase
         config(['app.debug' => false]);
 
         $user     = User::factory()->create();
-        $response = $this->postJson('/api/auth/forgot-password', ['email' => $user->email]);
+        $response = $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->email]);
 
         $response->assertStatus(200);
         $this->assertNull($response->json('otp'));
@@ -161,7 +161,7 @@ class AuthControllerTest extends TestCase
 
     public function test_forgot_password_rejects_unknown_email(): void
     {
-        $response = $this->postJson('/api/auth/forgot-password', [
+        $response = $this->postJson('/api/v1/auth/forgot-password', [
             'email' => 'nobody@example.com',
         ]);
 
@@ -183,7 +183,7 @@ class AuthControllerTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->postJson('/api/auth/verify-otp', [
+        $response = $this->postJson('/api/v1/auth/verify-otp', [
             'email' => $user->email,
             'otp'   => $otp,
         ]);
@@ -201,7 +201,7 @@ class AuthControllerTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->postJson('/api/auth/verify-otp', [
+        $response = $this->postJson('/api/v1/auth/verify-otp', [
             'email' => $user->email,
             'otp'   => '000000',
         ]);
@@ -224,7 +224,7 @@ class AuthControllerTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->postJson('/api/auth/reset-password', [
+        $response = $this->postJson('/api/v1/auth/reset-password', [
             'email'                 => $user->email,
             'otp'                   => $otp,
             'password'              => 'newpassword',
@@ -245,7 +245,7 @@ class AuthControllerTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $response = $this->postJson('/api/auth/reset-password', [
+        $response = $this->postJson('/api/v1/auth/reset-password', [
             'email'                 => $user->email,
             'otp'                   => 'wrong1',
             'password'              => 'newpassword',
