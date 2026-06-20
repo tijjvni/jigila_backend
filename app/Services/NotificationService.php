@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Mail\CredentialsMail;
+use App\Mail\InvoiceCreatedMail;
 use App\Mail\TicketCreatedMail;
 use App\Mail\TicketReplyMail;
 use App\Mail\WelcomeMail;
+use App\Models\Invoice;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
@@ -36,6 +39,35 @@ class NotificationService
             'welcome',
             'Welcome to Jigila!',
             'Your account has been created successfully. Start tracking your vehicle imports today.',
+        );
+    }
+
+    public function sendCredentials(User $user, string $temporaryPassword): void
+    {
+        try {
+            Mail::to($user->email)->queue(new CredentialsMail($user, $temporaryPassword));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send credentials email', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function sendInvoiceCreated(Invoice $invoice): void
+    {
+        $invoice->loadMissing(['user', 'order']);
+        $user = $invoice->user;
+
+        try {
+            Mail::to($user->email)->queue(new InvoiceCreatedMail($invoice));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send invoice email', ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]);
+        }
+
+        $this->createInApp(
+            $user,
+            'invoice_created',
+            'New Invoice Generated',
+            "Invoice {$invoice->invoice_number} for \${$invoice->amount} has been generated. Please log in to pay.",
+            ['invoice_id' => $invoice->id, 'invoice_number' => $invoice->invoice_number, 'amount' => $invoice->amount],
         );
     }
 
