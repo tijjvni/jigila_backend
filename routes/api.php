@@ -117,10 +117,12 @@ Route::prefix('v1')->group(function () {
 
             // Users — write
             Route::middleware('permission:users.manage')->group(function () {
-                Route::post('users',                    [UserController::class, 'store']);
-                Route::put('users/{user}',              [UserController::class, 'update']);
-                Route::delete('users/{user}',           [UserController::class, 'destroy']);
-                Route::patch('users/{user}/archive',    [UserController::class, 'archive']);
+                Route::post('users',                         [UserController::class, 'store']);
+                Route::put('users/{user}',                   [UserController::class, 'update']);
+                Route::delete('users/{user}',                [UserController::class, 'destroy']);
+                Route::patch('users/{user}/archive',         [UserController::class, 'archive']);
+                Route::patch('users/{user}/activate',        [UserController::class, 'activate']);
+                Route::post('users/{user}/reset-password',   [UserController::class, 'resetPassword']);
             });
 
             // Roles — all operations (no separate view slug)

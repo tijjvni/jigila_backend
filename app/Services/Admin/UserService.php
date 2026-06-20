@@ -3,12 +3,14 @@
 namespace App\Services\Admin;
 
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UserService
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function list(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = User::with('adminRoles')->latest();
@@ -35,17 +37,22 @@ class UserService
     {
         $firstName = $data['first_name'];
         $lastName  = $data['last_name'];
+        $password  = Str::random(12);
 
-        return User::create([
+        $user = User::create([
             'name'       => trim("{$firstName} {$lastName}"),
             'first_name' => $firstName,
             'last_name'  => $lastName,
             'email'      => $data['email'],
             'phone'      => $data['phone'],
             'role'       => $data['role'],
-            'password'   => Hash::make(Str::random(12)),
+            'password'   => $password,
             'status'     => 'active',
         ]);
+
+        $this->notifications->sendCredentials($user, $password);
+
+        return $user;
     }
 
     public function update(User $user, array $data): User
@@ -60,7 +67,7 @@ class UserService
             $updates['name']       = trim("{$first} {$last}");
         }
 
-        foreach (['email', 'phone', 'role'] as $field) {
+        foreach (['phone', 'role'] as $field) {
             if (isset($data[$field])) {
                 $updates[$field] = $data[$field];
             }
@@ -76,6 +83,20 @@ class UserService
         $user->update(['status' => 'archived']);
 
         return $user;
+    }
+
+    public function activate(User $user): User
+    {
+        $user->update(['status' => 'active']);
+
+        return $user->fresh();
+    }
+
+    public function resetPasswordByAdmin(User $user): void
+    {
+        $password = Str::random(12);
+        $user->update(['password' => $password]);
+        $this->notifications->sendCredentials($user, $password);
     }
 
     public function delete(User $user): void

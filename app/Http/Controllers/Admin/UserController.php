@@ -45,6 +45,18 @@ class UserController extends Controller
         return $this->okResponse(new AdminUserResource($this->userService->archive($user)));
     }
 
+    public function activate(User $user): JsonResponse
+    {
+        return $this->okResponse(new AdminUserResource($this->userService->activate($user)));
+    }
+
+    public function resetPassword(User $user): JsonResponse
+    {
+        $this->userService->resetPasswordByAdmin($user);
+
+        return $this->okResponse(['message' => 'Password reset and emailed to user.']);
+    }
+
     public function destroy(User $user): JsonResponse
     {
         $this->userService->delete($user);
