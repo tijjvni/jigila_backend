@@ -51,9 +51,11 @@ class NotificationService
 
     public function notifyAdmins(string $type, string $title, string $body, array $data = []): void
     {
-        User::where('role', 'admin')->get()->each(
-            fn (User $admin) => $this->createInApp($admin, $type, $title, $body, $data)
-        );
+        User::where('role', 'admin')->chunkById(100, function ($admins) use ($type, $title, $body, $data) {
+            foreach ($admins as $admin) {
+                $this->createInApp($admin, $type, $title, $body, $data);
+            }
+        });
     }
 
     public function sendTicketReply(Ticket $ticket, TicketMessage $message, User $recipient): void

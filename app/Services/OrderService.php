@@ -78,7 +78,7 @@ class OrderService
 
     public function find(Order $order): Order
     {
-        return $order->load(['user', 'invoice']);
+        return $order->load(['user', 'invoice', 'invoices']);
     }
 
     public function update(Order $order, array $data): Order

@@ -11,8 +11,10 @@ class AdminSettingsController extends Controller
 {
     public function index(): JsonResponse
     {
+        $rate = Setting::get('exchange_rate');
+
         return $this->okResponse([
-            'exchange_rate' => Setting::get('exchange_rate') ? (float) Setting::get('exchange_rate') : null,
+            'exchange_rate' => $rate ? (float) $rate : null,
         ]);
     }
 
