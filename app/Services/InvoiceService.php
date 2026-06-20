@@ -26,7 +26,7 @@ class InvoiceService
     ): Invoice {
         $paymentUrl       = null;
         $paymentReference = null;
-        $exchangeRate     = (float) Setting::get('exchange_rate', 0);
+        $exchangeRate     = (float) Setting::get('exchange_rate', 1);
 
         try {
             if ($exchangeRate <= 0) {

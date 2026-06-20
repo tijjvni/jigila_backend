@@ -15,7 +15,7 @@ class NotificationController extends Controller
         $paginated   = $user->notifications()->paginate(20);
         $unreadCount = $user->notifications()->whereNull('read_at')->count();
 
-        return response()->json([
+        return $this->okResponse([
             'data' => NotificationResource::collection($paginated->items()),
             'meta' => [
                 'current_page' => $paginated->currentPage(),

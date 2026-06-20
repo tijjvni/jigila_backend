@@ -128,7 +128,7 @@ class ConfigController extends Controller
                 ['value' => 'wy', 'label' => 'Wyoming (WY)'],
             ],
 
-            'exchange_rate' => Setting::get('exchange_rate') ? (float) Setting::get('exchange_rate') : null,
+            'exchange_rate' => ($er = Setting::get('exchange_rate')) ? (float) $er : null,
         ]);
     }
 }

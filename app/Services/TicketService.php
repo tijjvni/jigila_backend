@@ -105,9 +105,12 @@ class TicketService
         if ($isStaff) {
             $this->notifications->sendTicketReply($ticket, $message->load('user'), $ticket->user);
         } else {
-            User::where('role', 'admin')->get()->each(
-                fn ($admin) => $this->notifications->sendTicketReply($ticket, $message->load('user'), $admin)
-            );
+            $loadedMessage = $message->load('user');
+            User::where('role', 'admin')->chunkById(100, function ($admins) use ($ticket, $loadedMessage) {
+                foreach ($admins as $admin) {
+                    $this->notifications->sendTicketReply($ticket, $loadedMessage, $admin);
+                }
+            });
         }
 
         return $message;
