@@ -10,7 +10,6 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(SuperAdminRoleSeeder::class);
 
         User::updateOrCreate(
             ['email' => 'user@jigila.com'],
@@ -33,5 +32,8 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at'  => now(),
             ]
         );
+
+        $this->call(SuperAdminRoleSeeder::class);
+
     }
 }
