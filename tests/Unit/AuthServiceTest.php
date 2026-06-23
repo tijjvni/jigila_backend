@@ -42,7 +42,7 @@ class AuthServiceTest extends TestCase
     {
         $user = User::factory()->create(['password' => Hash::make('secret123')]);
 
-        $result = $this->service->login(['email' => $user->email, 'password' => 'secret123']);
+        $result = $this->service->login(['login' =>$user->email, 'password' => 'secret123']);
 
         $this->assertArrayHasKey('token', $result);
         $this->assertArrayHasKey('user', $result);
@@ -55,14 +55,14 @@ class AuthServiceTest extends TestCase
 
         $this->expectException(ValidationException::class);
 
-        $this->service->login(['email' => $user->email, 'password' => 'wrong']);
+        $this->service->login(['login' =>$user->email, 'password' => 'wrong']);
     }
 
     public function test_login_throws_for_nonexistent_email(): void
     {
         $this->expectException(ValidationException::class);
 
-        $this->service->login(['email' => 'ghost@example.com', 'password' => 'anything']);
+        $this->service->login(['login' =>'ghost@example.com', 'password' => 'anything']);
     }
 
     public function test_forgot_password_stores_hashed_otp(): void

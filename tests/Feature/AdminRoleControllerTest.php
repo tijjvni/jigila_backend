@@ -83,7 +83,7 @@ class AdminRoleControllerTest extends TestCase
         $response = $this->actingAs($admin)->postJson('/api/v1/admin/roles', [
             'name'        => 'Finance',
             'description' => 'Finance team role',
-            'permissions' => ['dashboard', 'budgetReports'],
+            'permissions' => ['dashboard.view', 'invoices.view'],
         ]);
 
         $response->assertStatus(201)
@@ -188,12 +188,12 @@ class AdminRoleControllerTest extends TestCase
     public function test_admin_can_update_role_permissions(): void
     {
         $admin = $this->admin();
-        $role  = $this->createRole(['permissions' => ['dashboard']]);
+        $role  = $this->createRole(['permissions' => ['dashboard.view']]);
 
         $this->actingAs($admin)
-            ->putJson("/api/v1/admin/roles/{$role->id}", ['permissions' => ['kpiTracking', 'userManagement']])
+            ->putJson("/api/v1/admin/roles/{$role->id}", ['permissions' => ['orders.view', 'users.manage']])
             ->assertStatus(200)
-            ->assertJsonPath('data.permissions', ['kpiTracking', 'userManagement']);
+            ->assertJsonPath('data.permissions', ['orders.view', 'users.manage']);
     }
 
     public function test_update_role_rejects_duplicate_name(): void

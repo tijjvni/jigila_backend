@@ -10,15 +10,11 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\OrderAuditLog;
 use App\Services\InvoiceService;
-use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 
 class InvoiceController extends Controller
 {
-    public function __construct(
-        private InvoiceService $invoiceService,
-        private NotificationService $notifications,
-    ) {}
+    public function __construct(private InvoiceService $invoiceService) {}
 
     public function index(): JsonResponse
     {
@@ -55,8 +51,6 @@ class InvoiceController extends Controller
                 'description' => $invoice->description,
             ],
         ]);
-
-        $this->notifications->sendInvoiceCreated($invoice);
 
         return $this->createdResponse(new InvoiceResource($invoice->load('order')));
     }

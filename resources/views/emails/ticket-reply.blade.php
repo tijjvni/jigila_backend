@@ -18,7 +18,7 @@
         <div class="message-body">{{ $message->body }}</div>
     </div>
 
-    <a href="{{ config('app.url') }}/support" class="btn">Reply to Ticket →</a>
+    <a href="{{ config('app.frontend_url') }}/support" class="btn">Reply to Ticket →</a>
 
     <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
         Log in to your dashboard to continue the conversation.

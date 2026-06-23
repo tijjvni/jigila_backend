@@ -15,11 +15,7 @@ class TicketResource extends JsonResource
             'subject'       => $this->subject,
             'status'        => $this->status,
             'message_count' => $this->messages_count ?? $this->messages->count(),
-            'user'          => $this->whenLoaded('user', fn () => [
-                'id'    => (string) $this->user->id,
-                'name'  => $this->user->name,
-                'email' => $this->user->email,
-            ]),
+            'user'          => new UserResource($this->whenLoaded('user')),
             'messages'   => TicketMessageResource::collection($this->whenLoaded('messages')),
             'updated_at' => $this->updated_at,
             'created_at' => $this->created_at,

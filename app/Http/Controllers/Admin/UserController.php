@@ -32,7 +32,9 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        return $this->okResponse(new AdminUserResource($user->load('adminRoles')));
+        $user->load(['adminRoles', 'orders.invoices', 'invoices']);
+
+        return $this->okResponse(new AdminUserResource($user));
     }
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse

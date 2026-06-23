@@ -75,7 +75,7 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create(['password' => Hash::make('secret123')]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => $user->email,
+            'login'    => $user->email,
             'password' => 'secret123',
         ]);
 
@@ -88,18 +88,18 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create(['password' => Hash::make('correct')]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email'    => $user->email,
+            'login'    => $user->email,
             'password' => 'wrong',
         ]);
 
-        $response->assertStatus(422)->assertJsonValidationErrors(['email']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['login']);
     }
 
     public function test_login_requires_email_and_password(): void
     {
         $response = $this->postJson('/api/v1/auth/login', []);
 
-        $response->assertStatus(422)->assertJsonValidationErrors(['email', 'password']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['login', 'password']);
     }
 
     // -------------------------------------------------------------------------

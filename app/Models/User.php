@@ -40,8 +40,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'phone',
         'password',
-        'role',
-        'status',
     ];
 
     protected $hidden = [
@@ -60,8 +58,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function booted(): void
     {
         static::deleting(function (User $user) {
-            $user->orders()->each(fn ($o) => $o->delete());
-            $user->tickets()->each(fn ($t) => $t->delete());
+            $user->orders()->delete();
+            $user->tickets()->delete();
         });
     }
 
@@ -90,22 +88,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Notification::class)->latest();
     }
 
+    private ?array $permissionsCache = null;
+
     public function hasPermission(string $permission): bool
     {
-        $this->loadMissing('adminRoles');
+        if ($this->role === 'admin') return true;
 
-        $granted = $this->adminRoles
-            ->flatMap(fn ($role) => $role->permissions ?? [])
-            ->unique()
-            ->all();
-
-        if (in_array($permission, $granted, true)) {
-            return true;
+        if ($this->permissionsCache === null) {
+            $this->loadMissing('adminRoles');
+            $this->permissionsCache = $this->adminRoles
+                ->flatMap(fn ($role) => $role->permissions ?? [])
+                ->unique()->values()->all();
         }
 
-        // *.manage satisfies *.view on the same prefix
+        if (in_array($permission, $this->permissionsCache, true)) return true;
+
         if (str_ends_with($permission, '.view')) {
-            return in_array(substr($permission, 0, -5) . '.manage', $granted, true);
+            return in_array(substr($permission, 0, -5) . '.manage', $this->permissionsCache, true);
         }
 
         return false;

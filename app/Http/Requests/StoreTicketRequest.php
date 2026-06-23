@@ -15,7 +15,7 @@ class StoreTicketRequest extends FormRequest
     {
         return [
             'subject' => 'required|string|max:255',
-            'body'    => 'required|string',
+            'body'    => 'required|string|max:10000',
         ];
     }
 }

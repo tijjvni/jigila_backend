@@ -16,27 +16,29 @@ class OrderService
 
     public function list(int $perPage = 15): LengthAwarePaginator
     {
-        return Order::with(['user', 'invoice'])->latest()->paginate($perPage);
+        return Order::with(['user', 'invoice', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')])
+            ->latest()
+            ->paginate($perPage);
     }
 
     public function find(Order $order): Order
     {
-        return $order->load(['user', 'invoices']);
+        return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function updateStatus(Order $order, string $status): Order
     {
-        $order->update(['status' => $status]);
+        $order->forceFill(['status' => $status])->save();
 
-        return $order->load(['user', 'invoices']);
+        return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function updateBid(Order $order, array $data, ?User $actor = null): Order
     {
-        $order->update([
+        $order->forceFill([
             'bid_status'    => $data['bid_status'],
             'out_bid_price' => $data['out_bid_price'] ?? null,
-        ]);
+        ])->save();
 
         // When the admin confirms the bid is won, auto-generate the remaining 50% balance invoice.
         // Guard against duplicate: only create if no bid_balance invoice exists yet.
@@ -69,13 +71,13 @@ class OrderService
             }
         }
 
-        return $order->load(['user', 'invoices']);
+        return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function updateLocation(Order $order, array $data): Order
     {
         $order->update($data);
 
-        return $order->load(['user', 'invoices']);
+        return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 }

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'       => \App\Http\Middleware\CheckRole::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'active'     => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
         $middleware->appendToGroup('api', \App\Http\Middleware\SlidingTokenExpiry::class);
     })

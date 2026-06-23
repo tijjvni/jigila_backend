@@ -15,11 +15,17 @@ class InvoiceResource extends JsonResource
             'type'           => $this->type,
             'description'    => $this->description,
             'amount'         => $this->amount,
+            'amount_ngn'     => (function () {
+                $rate = (float) ($this->metadata['exchange_rate'] ?? \App\Models\Setting::get('exchange_rate', 0));
+                return $rate > 0
+                    ? number_format((float) $this->amount * $rate, 2, '.', '')
+                    : null;
+            })(),
             'status'         => $this->status,
             'due_date'       => $this->due_date?->toDateString(),
             'paid_at'        => $this->paid_at,
             'payment_url'    => $this->payment_url,
-            'metadata'       => $this->metadata,
+            'metadata'       => $this->when(auth()->user()?->role === 'admin', $this->metadata),
             'order_id'       => $this->order_id,
             'order_vin'      => $this->whenLoaded('order', fn () => $this->order->vin),
             'user'           => new UserResource($this->whenLoaded('user')),

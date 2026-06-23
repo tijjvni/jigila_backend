@@ -8,7 +8,8 @@ use App\Services\InvoiceService;
 use App\Services\NotificationService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request; 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class WebhookController extends Controller
@@ -36,14 +37,21 @@ class WebhookController extends Controller
             if ($event === 'charge.success') {
                 $reference = $data['reference'] ?? null;
                 if ($reference) {
-                    $invoice = Invoice::where('payment_reference', $reference)
-                        ->where('status', 'pending')
-                        ->with('order.user')
-                        ->first();
+                    $invoice = DB::transaction(function () use ($reference, $data) {
+                        $inv = Invoice::where('payment_reference', $reference)
+                            ->where('status', 'pending')
+                            ->lockForUpdate()
+                            ->with('order.user')
+                            ->first();
+
+                        if ($inv) {
+                            $this->invoiceService->markPaid($inv, $reference, $data);
+                        }
+
+                        return $inv;
+                    });
 
                     if ($invoice) {
-                        $this->invoiceService->markPaid($invoice, $reference);
-
                         if ($invoice->order_id) {
                             OrderAuditLog::create([
                                 'order_id'   => $invoice->order_id,

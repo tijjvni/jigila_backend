@@ -21,12 +21,19 @@ class DashboardService
                 'total_users'           => User::where('role', 'user')->count(),
                 'total_orders'          => Order::count(),
                 'active_shipments'      => Order::whereIn('status', $activeShipmentStatuses)->count(),
-                'total_revenue'         => (float) Order::whereNotNull('bid_price')->sum(DB::raw('CAST(bid_price AS REAL)')),
+                'total_revenue'         => (float) Order::whereNotNull('bid_price')->sum('bid_price'),
 
                 // Chart: orders by status — toArray() gives a plain PHP array, not a Collection
                 'orders_by_status'      => Order::selectRaw('status, count(*) as count')
                     ->groupBy('status')
                     ->pluck('count', 'status')
+                    ->toArray(),
+
+                // Chart: orders by auction source (Copart / IAAI / Co-Parts)
+                'orders_by_auction_source' => Order::selectRaw('auction_source, count(*) as count')
+                    ->whereNotNull('auction_source')
+                    ->groupBy('auction_source')
+                    ->pluck('count', 'auction_source')
                     ->toArray(),
 
                 // Chart: orders per month (current year)
@@ -111,7 +118,7 @@ class DashboardService
     private function averageOrderValue(): float
     {
         return round(
-            (float) Order::whereNotNull('bid_price')->avg(DB::raw('CAST(bid_price AS REAL)')),
+            (float) Order::whereNotNull('bid_price')->avg('bid_price'),
             2
         );
     }

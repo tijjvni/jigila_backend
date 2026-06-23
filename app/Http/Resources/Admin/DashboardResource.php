@@ -18,9 +18,10 @@ class DashboardResource extends JsonResource
             'total_revenue'         => $this->resource['total_revenue'],
 
             // Charts
-            'orders_by_status'      => $this->resource['orders_by_status'],
-            'orders_by_month'       => $this->resource['orders_by_month'],
-            'revenue_by_service'    => $this->resource['revenue_by_service'],
+            'orders_by_status'         => $this->resource['orders_by_status'],
+            'orders_by_month'          => $this->resource['orders_by_month'],
+            'revenue_by_service'       => $this->resource['revenue_by_service'],
+            'orders_by_auction_source' => $this->resource['orders_by_auction_source'] ?? [],
 
             // Metrics
             'order_completion_rate' => $this->resource['order_completion_rate'],

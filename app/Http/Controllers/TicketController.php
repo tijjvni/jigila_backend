@@ -10,6 +10,7 @@ use App\Models\Ticket;
 use App\Services\TicketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
@@ -43,7 +44,12 @@ class TicketController extends Controller
     {
         $this->ticketService->authorize($request->user(), $ticket);
 
-        $message = $this->ticketService->reply($ticket, $request->user(), $request->validated('body'));
+        $paths = [];
+        foreach ($request->file('attachments', []) as $file) {
+            $paths[] = $file->store('ticket-attachments', 'public');
+        }
+
+        $message = $this->ticketService->reply($ticket, $request->user(), $request->validated('body'), $paths);
 
         return $this->createdResponse(new TicketMessageResource($message->load('user')));
     }

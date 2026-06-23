@@ -17,7 +17,7 @@ class UpdateOrderBidRequest extends FormRequest
     {
         return [
             'bid_status'    => ['required', Rule::in(BidStatus::values())],
-            'out_bid_price' => 'nullable|numeric|min:0',
+            'out_bid_price' => 'nullable|numeric|min:0|max:9999999.99',
         ];
     }
 }
