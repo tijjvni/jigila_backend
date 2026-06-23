@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <a href="{{ config('app.url') }}/support" class="btn">View Ticket →</a>
+    <a href="{{ config('app.frontend_url') }}/support" class="btn">View Ticket →</a>
 
     <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
         You'll receive an email notification when a team member replies.

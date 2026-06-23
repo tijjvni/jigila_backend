@@ -26,11 +26,15 @@ class AuthService
 
     public function login(array $data): array
     {
-        $user = User::where('email', $data['email'])->first();
+        $login = $data['login'];
+
+        $user = User::where('email', $login)
+            ->orWhere('phone', $login)
+            ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'login' => ['The provided credentials are incorrect.'],
             ]);
         }
 

@@ -51,14 +51,14 @@ class OrderServiceTest extends TestCase
         $order = $this->service->create($user, [
             'vin'               => '1HGCM82633A004352',
             'auction_source'    => 'Copart',
-            'condition'         => 'Runner',
+            'condition'         => 'Run and Drive',
             'already_purchased' => false,
             'bid_price'         => '5000',
             'services'          => ['trucking'],
         ]);
 
         $this->assertEquals($user->id, $order->user_id);
-        $this->assertEquals('pending', $order->status);
+        $this->assertEquals('pending', $order->status->value);
         $this->assertDatabaseHas('orders', ['vin' => '1HGCM82633A004352']);
     }
 
@@ -77,7 +77,7 @@ class OrderServiceTest extends TestCase
 
         $updated = $this->service->update($order, ['status' => 'processing']);
 
-        $this->assertEquals('processing', $updated->status);
+        $this->assertEquals('processing', $updated->status->value);
         $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'processing']);
     }
 

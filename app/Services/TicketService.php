@@ -86,7 +86,7 @@ class TicketService
         return $ticket->load(['messages.user', 'user']);
     }
 
-    public function reply(Ticket $ticket, User $sender, string $body): TicketMessage
+    public function reply(Ticket $ticket, User $sender, string $body, array $attachments = []): TicketMessage
     {
         $isStaff = $sender->role === 'admin';
 
@@ -94,6 +94,7 @@ class TicketService
             'user_id'        => $sender->id,
             'body'           => $body,
             'is_staff_reply' => $isStaff,
+            'attachments'    => $attachments ?: null,
         ]);
 
         if ($isStaff && $ticket->status === 'open') {

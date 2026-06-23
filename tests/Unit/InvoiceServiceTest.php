@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\NotificationService;
 use App\Services\PaystackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -19,7 +20,7 @@ class InvoiceServiceTest extends TestCase
     private function makeService(?PaystackService $paystack = null): InvoiceService
     {
         $paystack ??= $this->mockPaystack();
-        return new InvoiceService($paystack);
+        return new InvoiceService($paystack, new NotificationService());
     }
 
     private function mockPaystack(bool $succeed = true): PaystackService
@@ -100,7 +101,7 @@ class InvoiceServiceTest extends TestCase
         $paystack = Mockery::mock(PaystackService::class);
         // $100 USD × 1600 rate × 100 kobo = 16,000,000 kobo
         $paystack->shouldReceive('initializeTransaction')
-            ->with($user->email, 16_000_000, Mockery::any(), Mockery::any())
+            ->with($user->email, 16_000_000, Mockery::any(), Mockery::any(), Mockery::any())
             ->once()
             ->andReturn(['authorization_url' => 'https://paystack.com/pay/x', 'reference' => 'jig_x']);
 

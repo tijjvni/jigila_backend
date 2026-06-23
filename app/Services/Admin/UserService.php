@@ -45,10 +45,9 @@ class UserService
             'last_name'  => $lastName,
             'email'      => $data['email'],
             'phone'      => $data['phone'],
-            'role'       => $data['role'],
             'password'   => $password,
-            'status'     => 'active',
         ]);
+        $user->forceFill(['role' => $data['role'], 'status' => 'active'])->save();
 
         $this->notifications->sendCredentials($user, $password);
 
@@ -67,27 +66,27 @@ class UserService
             $updates['name']       = trim("{$first} {$last}");
         }
 
-        foreach (['phone', 'role'] as $field) {
+        foreach (['email', 'phone', 'role'] as $field) {
             if (isset($data[$field])) {
                 $updates[$field] = $data[$field];
             }
         }
 
-        $user->update($updates);
+        $user->forceFill($updates)->save();
 
         return $user->fresh('adminRoles');
     }
 
     public function archive(User $user): User
     {
-        $user->update(['status' => 'archived']);
+        $user->forceFill(['status' => 'archived'])->save();
 
         return $user;
     }
 
     public function activate(User $user): User
     {
-        $user->update(['status' => 'active']);
+        $user->forceFill(['status' => 'active'])->save();
 
         return $user->fresh();
     }

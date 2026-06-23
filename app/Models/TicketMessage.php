@@ -13,9 +13,12 @@ class TicketMessage extends Model
 {
     use HasFactory, SoftDeletes, Prunable;
 
-    protected $fillable = ['ticket_id', 'user_id', 'body', 'is_staff_reply'];
+    protected $fillable = ['ticket_id', 'user_id', 'body', 'is_staff_reply', 'attachments'];
 
-    protected $casts = ['is_staff_reply' => 'boolean'];
+    protected $casts = [
+        'is_staff_reply' => 'boolean',
+        'attachments'    => 'array',
+    ];
 
     public function ticket(): BelongsTo
     {

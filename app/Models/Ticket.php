@@ -19,7 +19,7 @@ class Ticket extends Model
     protected static function booted(): void
     {
         static::deleting(function (Ticket $ticket) {
-            $ticket->messages()->each(fn ($m) => $m->delete());
+            $ticket->messages()->delete();
         });
     }
 

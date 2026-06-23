@@ -19,10 +19,11 @@ use App\Http\Controllers\Admin\RoleController;
 use Illuminate\Support\Facades\Route;
 
 // Paystack webhook — unversioned, no auth required
-Route::post('webhooks/paystack', [WebhookController::class, 'paystack']);
+Route::post('webhooks/paystack', [WebhookController::class, 'paystack'])->middleware('throttle:120,1');
 
 Route::prefix('v1')->group(function () {
-    Route::get('config', ConfigController::class);
+    Route::get('config',       ConfigController::class);
+    Route::get('config/stats', [ConfigController::class, 'stats']);
 
     // ── Auth (no token required) ──────────────────────────────────────────────
     Route::prefix('auth')->group(function () {
@@ -50,7 +51,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // ── Authenticated + email verified ────────────────────────────────────────
-    Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::middleware(['auth:sanctum', 'verified', 'active'])->group(function () {
         Route::get('profile', [ProfileController::class, 'show']);
         Route::put('profile', [ProfileController::class, 'update']);
 

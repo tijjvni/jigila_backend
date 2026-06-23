@@ -18,7 +18,8 @@ class PaystackService
         string $email,
         int    $amountKobo,
         string $reference,
-        string $callbackUrl
+        string $callbackUrl,
+        array  $metadata = []
     ): array {
         $response = Http::withToken($this->secretKey)
             ->post("{$this->baseUrl}/transaction/initialize", [
@@ -26,6 +27,7 @@ class PaystackService
                 'amount'       => $amountKobo,
                 'reference'    => $reference,
                 'callback_url' => $callbackUrl,
+                'metadata'     => $metadata ?: null,
             ]);
 
         if (!$response->successful() || !($response->json('status'))) {

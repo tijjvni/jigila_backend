@@ -26,7 +26,7 @@
         </tr>
     </table>
 
-    <a href="{{ config('app.url') }}/login" class="btn">Log In to Jigila →</a>
+    <a href="{{ config('app.frontend_url') }}/login" class="btn">Log In to Jigila →</a>
 
     <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
         For security, please change your password immediately after your first login. If you did not expect this email, contact our support team.

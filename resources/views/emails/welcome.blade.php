@@ -9,7 +9,7 @@
     <p>Your account has been created successfully. You can now log in to track your vehicle imports, manage shipments, and more — all from a single dashboard.</p>
     <div class="divider"></div>
     <p>Get started by visiting your dashboard:</p>
-    <a href="{{ config('app.url') }}/dashboard" class="btn">Go to Dashboard →</a>
+    <a href="{{ config('app.frontend_url') }}/dashboard" class="btn">Go to Dashboard →</a>
     <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
         If you have any questions, open a support ticket from your dashboard and our team will be happy to help.
     </p>

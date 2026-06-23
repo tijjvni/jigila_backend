@@ -18,9 +18,11 @@ class OrderService
 
     public function list(User $user, int $perPage = 15): LengthAwarePaginator
     {
+        $auditLoad = ['auditLogs' => fn ($q) => $q->where('action', 'status_changed')];
+
         return $user->role === 'admin'
-            ? Order::with(['user', 'invoice'])->latest()->paginate($perPage)
-            : $user->orders()->with(['invoice'])->latest()->paginate($perPage);
+            ? Order::with(['user', 'invoice', ...$auditLoad])->latest()->paginate($perPage)
+            : $user->orders()->with(['invoice', ...$auditLoad])->latest()->paginate($perPage);
     }
 
     public function create(User $user, array $data): Order
@@ -78,12 +80,12 @@ class OrderService
 
     public function find(Order $order): Order
     {
-        return $order->load(['user', 'invoice', 'invoices']);
+        return $order->load(['user', 'invoice', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function update(Order $order, array $data): Order
     {
-        $order->update($data);
+        $order->forceFill($data)->save();
 
         return $order;
     }

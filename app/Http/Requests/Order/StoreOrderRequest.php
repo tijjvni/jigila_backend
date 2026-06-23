@@ -26,7 +26,7 @@ class StoreOrderRequest extends FormRequest
             'auction_source'    => ['required', Rule::in(AuctionSource::values())],
             'condition'         => ['required', Rule::in(VehicleCondition::values())],
             'already_purchased' => 'required|boolean',
-            'bid_price'         => 'required_if:already_purchased,false|nullable|string',
+            'bid_price'         => 'required_if:already_purchased,false|nullable|numeric|min:1|max:9999999.99',
             'vehicle_stock_no'  => 'required_if:already_purchased,true|nullable|string',
             'buyer_no'          => 'required_if:already_purchased,true|nullable|string',
             'buyer_code'        => 'required_if:already_purchased,true|nullable|string',

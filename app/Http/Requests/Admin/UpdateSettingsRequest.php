@@ -14,7 +14,7 @@ class UpdateSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0.01'],
         ];
     }
 }

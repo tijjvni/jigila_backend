@@ -7,7 +7,9 @@ use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\ServiceType;
 use App\Enums\VehicleCondition;
+use App\Models\Order;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 
 class ConfigController extends Controller
@@ -129,6 +131,23 @@ class ConfigController extends Controller
             ],
 
             'exchange_rate' => ($er = Setting::get('exchange_rate')) ? (float) $er : null,
+        ]);
+    }
+
+    public function stats(): JsonResponse
+    {
+        $freightPorts = config('freight');
+        // Derive port count from the same arrays that power the config dropdown
+        // so the number stays accurate automatically as ports are added or removed
+        $portCount = count($freightPorts['departure_ports'] ?? [])
+                   + count($freightPorts['destination_ports'] ?? []);
+
+        return $this->okResponse([
+            'registered_customers' => User::where('role', 'user')->count(),
+            'vehicles_delivered'   => Order::where('status', 'delivered')->count(),
+            'ports_covered'        => $portCount,
+            'countries_served'     => 6,
+            'years_operating'      => now()->year - 2020,
         ]);
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\AuctionSource;
+use App\Enums\OrderStatus;
+use App\Enums\VehicleCondition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +23,7 @@ use App\Models\OrderAuditLog;
  * @property string $auction_source
  * @property string $condition
  * @property bool $already_purchased
- * @property string|null $bid_price
+ * @property numeric|null $bid_price
  * @property string|null $vehicle_stock_no
  * @property string|null $buyer_no
  * @property string|null $buyer_code
@@ -46,12 +49,9 @@ class Order extends Model
         'buyer_no',
         'buyer_code',
         'services',
-        'status',
         'pickup_location',
         'departure_port',
         'destination_port',
-        'bid_status',
-        'out_bid_price',
         'vehicle_type',
     ];
 
@@ -59,7 +59,10 @@ class Order extends Model
     {
         return [
             'already_purchased' => 'boolean',
-            'services' => 'array',
+            'services'          => 'array',
+            'auction_source'    => AuctionSource::class,
+            'condition'         => VehicleCondition::class,
+            'status'            => OrderStatus::class,
         ];
     }
 

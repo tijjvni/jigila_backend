@@ -2,7 +2,7 @@
 
 @section('header-bg', '#1d4ed8')
 @section('header-title', 'New Invoice Generated')
-@section('header-subtitle', '{{ $invoice->invoice_number }}')
+@section('header-subtitle'){{ $invoice->invoice_number }}@endsection
 
 @section('body')
     <p>Hi <strong>{{ $invoice->user->first_name ?? $invoice->user->name }}</strong>,</p>
@@ -52,7 +52,7 @@
     @if ($invoice->payment_url)
         <a href="{{ $invoice->payment_url }}" class="btn">Pay Invoice →</a>
     @else
-        <a href="{{ config('app.url') }}/invoices" class="btn">View Invoice →</a>
+        <a href="{{ config('app.frontend_url') }}/invoices" class="btn">View Invoice →</a>
     @endif
 
     <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
