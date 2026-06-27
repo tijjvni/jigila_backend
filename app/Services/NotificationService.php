@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\CredentialsMail;
+use App\Mail\ForgotPasswordMail;
 use App\Mail\InvoiceCreatedMail;
 use App\Mail\TicketCreatedMail;
 use App\Mail\TicketReplyMail;
@@ -40,6 +41,15 @@ class NotificationService
             'Welcome to Jigila!',
             'Your account has been created successfully. Start tracking your vehicle imports today.',
         );
+    }
+
+    public function sendForgotPassword(User $user, string $otp): void
+    {
+        try {
+            Mail::to($user->email)->send(new ForgotPasswordMail($user, $otp));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send forgot password email', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
     }
 
     public function sendCredentials(User $user, string $temporaryPassword): void
