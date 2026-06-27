@@ -63,6 +63,9 @@ class AuthService
             ['token', 'created_at']
         );
 
+        $user = User::where('email', $email)->first();
+        $this->notifications->sendForgotPassword($user, $otp);
+
         return $otp;
     }
 

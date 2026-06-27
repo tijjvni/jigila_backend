@@ -28,6 +28,13 @@ class InvoiceResource extends JsonResource
             'metadata'       => $this->when(auth()->user()?->role === 'admin', $this->metadata),
             'order_id'       => $this->order_id,
             'order_vin'      => $this->whenLoaded('order', fn () => $this->order->vin),
+            'order'          => $this->whenLoaded('order', fn () => [
+                'id'             => (string) $this->order->id,
+                'vin'            => $this->order->vin,
+                'stock_id'       => $this->order->stock_id,
+                'auction_source' => $this->order->auction_source,
+                'condition'      => $this->order->condition,
+            ]),
             'user'           => new UserResource($this->whenLoaded('user')),
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
