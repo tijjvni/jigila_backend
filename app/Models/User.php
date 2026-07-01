@@ -110,6 +110,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return false;
     }
 
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new \App\Notifications\VerifyEmail());
+    }
+
     public function prunable(): Builder
     {
         return static::onlyTrashed()->where('deleted_at', '<=', now()->subDays(90));
