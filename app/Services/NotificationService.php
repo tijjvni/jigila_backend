@@ -46,7 +46,7 @@ class NotificationService
     public function sendForgotPassword(User $user, string $otp): void
     {
         try {
-            Mail::to($user->email)->send(new ForgotPasswordMail($user, $otp));
+            Mail::to($user->email)->queue(new ForgotPasswordMail($user, $otp));
         } catch (\Throwable $e) {
             Log::error('Failed to send forgot password email', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }
