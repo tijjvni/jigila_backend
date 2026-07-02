@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Mail\EmailVerificationMail;
+use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -20,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->bootFailedJobLogging();
         $this->bootEmailVerificationUrl();
+        $this->bootEmailVerificationTemplate();
     }
 
     private function bootFailedJobLogging(): void
@@ -44,6 +47,14 @@ class AppServiceProvider extends ServiceProvider
             );
 
             return $signedUrl;
+        });
+    }
+
+    private function bootEmailVerificationTemplate(): void
+    {
+        VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+            /** @var User $notifiable */
+            return (new EmailVerificationMail($notifiable, $url))->to($notifiable->email);
         });
     }
 }

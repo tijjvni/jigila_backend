@@ -20,15 +20,21 @@ use App\Models\OrderAuditLog;
  * @property int $user_id
  * @property string $vin
  * @property string|null $stock_id
- * @property string $auction_source
- * @property string $condition
+ * @property AuctionSource $auction_source
+ * @property VehicleCondition $condition
  * @property bool $already_purchased
- * @property numeric|null $bid_price
+ * @property string|null $bid_price
  * @property string|null $vehicle_stock_no
  * @property string|null $buyer_no
  * @property string|null $buyer_code
  * @property array|null $services
- * @property string $status
+ * @property string|null $vehicle_type
+ * @property string|null $pickup_location
+ * @property string|null $departure_port
+ * @property string|null $destination_port
+ * @property OrderStatus $status
+ * @property string|null $bid_status
+ * @property string|null $out_bid_price
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -59,6 +65,7 @@ class Order extends Model
     {
         return [
             'already_purchased' => 'boolean',
+            'bid_price'         => 'decimal:2',
             'services'          => 'array',
             'auction_source'    => AuctionSource::class,
             'condition'         => VehicleCondition::class,

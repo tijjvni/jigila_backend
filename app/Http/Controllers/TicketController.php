@@ -10,7 +10,6 @@ use App\Models\Ticket;
 use App\Services\TicketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
