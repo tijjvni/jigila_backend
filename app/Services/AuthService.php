@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
@@ -44,11 +46,11 @@ class AuthService
         return ['token' => $token, 'user' => $user];
     }
 
-    public function logout(\Illuminate\Http\Request $request): void
+    public function logout(Request $request): void
     {
         $token = $request->user()->currentAccessToken();
 
-        if ($token instanceof \Laravel\Sanctum\PersonalAccessToken) {
+        if ($token instanceof PersonalAccessToken) {
             $token->delete();
         }
     }
