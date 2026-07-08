@@ -140,9 +140,9 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create(['user_id' => $user->id, 'status' => 'pending']);
 
         $this->actingAs($user)
-            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'processing'])
+            ->putJson("/api/v1/orders/{$order->id}", ['stock_id' => 'STK-123'])
             ->assertStatus(200)
-            ->assertJsonPath('data.status', 'processing');
+            ->assertJsonPath('data.stock_id', 'STK-123');
     }
 
     public function test_user_cannot_update_another_users_order(): void
@@ -151,19 +151,23 @@ class OrderControllerTest extends TestCase
         $order = Order::factory()->create();
 
         $this->actingAs($user)
-            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'processing'])
+            ->putJson("/api/v1/orders/{$order->id}", ['stock_id' => 'STK-123'])
             ->assertStatus(403);
     }
 
-    public function test_update_rejects_invalid_status(): void
+    public function test_user_cannot_change_order_status(): void
     {
+        // Status transitions are admin-only (PATCH admin/orders/{id}/status);
+        // a status field on the user update route must be silently ignored.
         $user  = User::factory()->create();
-        $order = Order::factory()->create(['user_id' => $user->id]);
+        $order = Order::factory()->create(['user_id' => $user->id, 'status' => 'pending']);
 
         $this->actingAs($user)
-            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'flying'])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['status']);
+            ->putJson("/api/v1/orders/{$order->id}", ['status' => 'delivered'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.status', 'pending');
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'pending']);
     }
 
     // -------------------------------------------------------------------------

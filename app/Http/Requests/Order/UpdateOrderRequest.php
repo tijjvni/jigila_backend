@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Order;
 
 use App\Enums\AuctionSource;
-use App\Enums\OrderStatus;
 use App\Enums\ServiceType;
 use App\Enums\VehicleCondition;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,7 +29,6 @@ class UpdateOrderRequest extends FormRequest
             'buyer_code'        => 'nullable|string',
             'services'          => 'nullable|array',
             'services.*'        => Rule::in(ServiceType::values()),
-            'status'            => ['sometimes', Rule::in(OrderStatus::values())],
         ];
     }
 }
