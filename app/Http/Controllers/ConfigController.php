@@ -69,6 +69,7 @@ class ConfigController extends Controller
                 'trucking_condition_surcharges' => $freightPorts['trucking_condition_surcharges'],
                 'trucking_sedan_rates'         => (function () use ($freightPorts) {
                     $portKeys = array_keys($freightPorts['departure_ports']);
+
                     return collect($freightPorts['trucking_sedan_rates'])
                         ->map(fn ($rates) => array_combine($portKeys, $rates))
                         ->all();

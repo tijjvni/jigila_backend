@@ -5,7 +5,6 @@ namespace App\Services\Admin;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 class RoleService
 {
@@ -22,7 +21,7 @@ class RoleService
             'permissions' => $data['permissions'] ?? [],
         ]);
 
-        if (! empty($data['assigned_user_ids'])) {
+        if (!empty($data['assigned_user_ids'])) {
             $role->users()->sync($data['assigned_user_ids']);
         }
 
@@ -40,7 +39,7 @@ class RoleService
             'name'        => $data['name']        ?? null,
             'description' => $data['description'] ?? null,
             'permissions' => $data['permissions'] ?? null,
-        ], fn ($v) => ! is_null($v)));
+        ], fn ($v) => !is_null($v)));
 
         return $role->load('users');
     }

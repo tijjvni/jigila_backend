@@ -17,7 +17,7 @@ class DashboardServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new DashboardService();
+        $this->service = new DashboardService;
     }
 
     public function test_stats_returns_correct_user_count(): void

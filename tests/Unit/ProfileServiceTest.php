@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\User;
 use App\Services\ProfileService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class ProfileServiceTest extends TestCase
@@ -16,7 +17,7 @@ class ProfileServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ProfileService();
+        $this->service = new ProfileService;
     }
 
     public function test_update_modifies_user_name(): void
@@ -53,6 +54,6 @@ class ProfileServiceTest extends TestCase
 
         $this->service->update($user, ['password' => 'newpassword']);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newpassword', $user->fresh()->password));
+        $this->assertTrue(Hash::check('newpassword', $user->fresh()->password));
     }
 }

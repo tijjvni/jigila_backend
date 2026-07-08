@@ -31,12 +31,10 @@ class OrderResource extends JsonResource
             'user'              => new UserResource($this->whenLoaded('user')),
             'invoice'           => new InvoiceResource($this->whenLoaded('invoice')),
             'invoices'          => InvoiceResource::collection($this->whenLoaded('invoices')),
-            'vessel_date'       => $this->whenLoaded('auditLogs', fn () =>
-                $this->auditLogs
-                    ->first(fn ($log) =>
-                        $log->action === 'status_changed' &&
-                        ($log->new_values['status'] ?? null) === 'on_vessel'
-                    )?->created_at
+            'vessel_date'       => $this->whenLoaded('auditLogs', fn () => $this->auditLogs
+                ->first(fn ($log) => $log->action === 'status_changed' &&
+                    ($log->new_values['status'] ?? null) === 'on_vessel'
+                )?->created_at
             ),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,

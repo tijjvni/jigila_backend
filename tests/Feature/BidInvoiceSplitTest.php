@@ -119,7 +119,7 @@ class BidInvoiceSplitTest extends TestCase
         ])->assertStatus(201);
 
         $this->assertDatabaseMissing('invoices', ['user_id' => $user->id, 'type' => 'bid']);
-        $this->assertDatabaseHas('invoices',    ['user_id' => $user->id, 'type' => 'bid_deposit']);
+        $this->assertDatabaseHas('invoices', ['user_id' => $user->id, 'type' => 'bid_deposit']);
     }
 
     // ─── Admin marks bid won: balance invoice ─────────────────────────────────

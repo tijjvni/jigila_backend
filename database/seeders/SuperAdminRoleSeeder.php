@@ -24,7 +24,7 @@ class SuperAdminRoleSeeder extends Seeder
             $user->adminRoles()->syncWithoutDetaching([$role->id]);
         });
 
-        $this->command->info("Super Admin role seeded with " . count(Permission::values()) . " permissions.");
-        $this->command->info("Attached to " . User::where('role', 'admin')->count() . " admin user(s).");
+        $this->command->info('Super Admin role seeded with ' . count(Permission::values()) . ' permissions.');
+        $this->command->info('Attached to ' . User::where('role', 'admin')->count() . ' admin user(s).');
     }
 }

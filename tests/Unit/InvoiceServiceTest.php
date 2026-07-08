@@ -11,6 +11,7 @@ use App\Services\NotificationService;
 use App\Services\PaystackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class InvoiceServiceTest extends TestCase
@@ -20,7 +21,8 @@ class InvoiceServiceTest extends TestCase
     private function makeService(?PaystackService $paystack = null): InvoiceService
     {
         $paystack ??= $this->mockPaystack();
-        return new InvoiceService($paystack, new NotificationService());
+
+        return new InvoiceService($paystack, new NotificationService);
     }
 
     private function mockPaystack(bool $succeed = true): PaystackService
@@ -207,7 +209,7 @@ class InvoiceServiceTest extends TestCase
         $other   = User::factory()->create(['role' => 'user']);
         $invoice = Invoice::factory()->create(['user_id' => $owner->id]);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         $this->makeService()->authorize($other, $invoice);
     }

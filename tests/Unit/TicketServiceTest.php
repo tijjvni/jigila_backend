@@ -7,6 +7,7 @@ use App\Services\NotificationService;
 use App\Services\TicketService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class TicketServiceTest extends TestCase
@@ -16,6 +17,7 @@ class TicketServiceTest extends TestCase
     private function makeService(?NotificationService $notifications = null): TicketService
     {
         $notifications ??= Mockery::mock(NotificationService::class)->shouldIgnoreMissing();
+
         return new TicketService($notifications);
     }
 
@@ -186,7 +188,7 @@ class TicketServiceTest extends TestCase
 
     public function test_authorize_throws_403_for_non_owner(): void
     {
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         $other  = $this->createUser();
         $ticket = Ticket::factory()->create();

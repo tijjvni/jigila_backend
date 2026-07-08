@@ -7,7 +7,6 @@ use App\Mail\TicketReplyMail;
 use App\Mail\WelcomeMail;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
-use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -23,7 +22,7 @@ class NotificationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new NotificationService();
+        $this->service = new NotificationService;
     }
 
     // ── sendWelcome ───────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,7 +17,8 @@ class InvoiceResource extends JsonResource
             'description'    => $this->description,
             'amount'         => $this->amount,
             'amount_ngn'     => (function () {
-                $rate = (float) ($this->metadata['exchange_rate'] ?? \App\Models\Setting::get('exchange_rate', 0));
+                $rate = (float) ($this->metadata['exchange_rate'] ?? Setting::get('exchange_rate', 0));
+
                 return $rate > 0
                     ? number_format((float) $this->amount * $rate, 2, '.', '')
                     : null;
