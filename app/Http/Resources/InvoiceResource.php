@@ -17,7 +17,7 @@ class InvoiceResource extends JsonResource
             'description'    => $this->description,
             'amount'         => $this->amount,
             'amount_ngn'     => (function () {
-                $rate = (float) ($this->metadata['exchange_rate'] ?? Setting::get('exchange_rate', 0));
+                $rate = (float) ($this->metadata['exchange_rate'] ?? Setting::get('exchange_rate', 1));
 
                 return $rate > 0
                     ? number_format((float) $this->amount * $rate, 2, '.', '')
