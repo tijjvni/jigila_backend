@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 class PaystackService
 {
     private string $secretKey;
+
     private string $baseUrl = 'https://api.paystack.co';
 
     public function __construct()
@@ -16,10 +17,10 @@ class PaystackService
 
     public function initializeTransaction(
         string $email,
-        int    $amountKobo,
+        int $amountKobo,
         string $reference,
         string $callbackUrl,
-        array  $metadata = []
+        array $metadata = []
     ): array {
         $response = Http::withToken($this->secretKey)
             ->post("{$this->baseUrl}/transaction/initialize", [
@@ -33,20 +34,6 @@ class PaystackService
         if (!$response->successful() || !($response->json('status'))) {
             throw new \RuntimeException(
                 'Paystack initialization failed: ' . $response->json('message', 'Unknown error')
-            );
-        }
-
-        return $response->json('data');
-    }
-
-    public function verifyTransaction(string $reference): array
-    {
-        $response = Http::withToken($this->secretKey)
-            ->get("{$this->baseUrl}/transaction/verify/{$reference}");
-
-        if (!$response->successful() || !($response->json('status'))) {
-            throw new \RuntimeException(
-                'Paystack verification failed: ' . $response->json('message', 'Unknown error')
             );
         }
 

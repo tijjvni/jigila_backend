@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
-use App\Models\OrderAuditLog;
 use App\Services\InvoiceService;
 use App\Services\NotificationService;
 use App\Services\PaystackService;
@@ -15,8 +14,8 @@ use Illuminate\Support\Facades\Log;
 class WebhookController extends Controller
 {
     public function __construct(
-        private PaystackService     $paystack,
-        private InvoiceService      $invoiceService,
+        private PaystackService $paystack,
+        private InvoiceService $invoiceService,
         private NotificationService $notifications,
     ) {}
 
@@ -27,6 +26,7 @@ class WebhookController extends Controller
 
         if (!$this->paystack->validateWebhookSignature($payload, $signature)) {
             Log::warning('Paystack webhook: invalid signature rejected');
+
             return $this->messageResponse('OK');
         }
 
@@ -52,22 +52,6 @@ class WebhookController extends Controller
                     });
 
                     if ($invoice) {
-                        if ($invoice->order_id) {
-                            OrderAuditLog::create([
-                                'order_id'   => $invoice->order_id,
-                                'user_id'    => null,
-                                'action'     => 'payment_received',
-                                'old_values' => ['status' => 'pending'],
-                                'new_values' => [
-                                    'status'         => 'paid',
-                                    'reference'      => $reference,
-                                    'invoice_number' => $invoice->invoice_number,
-                                    'amount'         => $invoice->amount,
-                                    'type'           => $invoice->type,
-                                ],
-                            ]);
-                        }
-
                         $customerName = $invoice->order?->user?->name ?? 'Customer';
                         $this->notifications->notifyAdmins(
                             'payment_received',
@@ -81,9 +65,11 @@ class WebhookController extends Controller
                 }
             }
         } catch (\Throwable $e) {
+            // Log identifying fields only — the raw payload contains cardholder PII.
             Log::error('Paystack webhook processing failed', [
-                'error'   => $e->getMessage(),
-                'payload' => $payload,
+                'error'     => $e->getMessage(),
+                'event'     => $request->input('event'),
+                'reference' => $request->input('data.reference'),
             ]);
         }
 

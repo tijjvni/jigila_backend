@@ -18,6 +18,7 @@ class TicketController extends Controller
     public function index(Request $request): JsonResponse
     {
         $paginated = $this->ticketService->list($request->user());
+
         return $this->okResponse(TicketResource::collection($paginated));
     }
 
@@ -43,12 +44,12 @@ class TicketController extends Controller
     {
         $this->ticketService->authorize($request->user(), $ticket);
 
-        $paths = [];
-        foreach ($request->file('attachments', []) as $file) {
-            $paths[] = $file->store('ticket-attachments', 'public');
-        }
-
-        $message = $this->ticketService->reply($ticket, $request->user(), $request->validated('body'), $paths);
+        $message = $this->ticketService->reply(
+            $ticket,
+            $request->user(),
+            $request->validated('body'),
+            $request->file('attachments', []),
+        );
 
         return $this->createdResponse(new TicketMessageResource($message->load('user')));
     }

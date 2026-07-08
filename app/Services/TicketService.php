@@ -6,6 +6,7 @@ use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class TicketService
@@ -43,6 +44,8 @@ class TicketService
             'total'          => $counts->sum(),
             'open'           => (int) ($counts['open'] ?? 0),
             'in_progress'    => (int) ($counts['in_progress'] ?? 0),
+            'resolved'       => (int) ($counts['resolved'] ?? 0),
+            'closed'         => (int) ($counts['closed'] ?? 0),
             'resolved_today' => $resolvedToday,
         ];
     }
@@ -86,15 +89,21 @@ class TicketService
         return $ticket->load(['messages.user', 'user']);
     }
 
+    /** @param UploadedFile[] $attachments */
     public function reply(Ticket $ticket, User $sender, string $body, array $attachments = []): TicketMessage
     {
         $isStaff = $sender->role === 'admin';
+
+        $paths = array_map(
+            fn (UploadedFile $file) => $file->store('ticket-attachments', 'public'),
+            $attachments,
+        );
 
         $message = $ticket->messages()->create([
             'user_id'        => $sender->id,
             'body'           => $body,
             'is_staff_reply' => $isStaff,
-            'attachments'    => $attachments ?: null,
+            'attachments'    => $paths ?: null,
         ]);
 
         if ($isStaff && $ticket->status === 'open') {
