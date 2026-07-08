@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class OrderServiceTest extends TestCase
@@ -71,14 +72,24 @@ class OrderServiceTest extends TestCase
         $this->assertTrue($found->relationLoaded('user'));
     }
 
-    public function test_update_modifies_order_fields(): void
+    public function test_update_modifies_fillable_order_fields(): void
     {
         $order = Order::factory()->create(['status' => 'pending']);
 
-        $updated = $this->service->update($order, ['status' => 'processing']);
+        $updated = $this->service->update($order, ['stock_id' => 'STK-999']);
 
-        $this->assertEquals('processing', $updated->status->value);
-        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'processing']);
+        $this->assertEquals('STK-999', $updated->stock_id);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'stock_id' => 'STK-999']);
+    }
+
+    public function test_update_cannot_change_guarded_status_field(): void
+    {
+        $order = Order::factory()->create(['status' => 'pending']);
+
+        $updated = $this->service->update($order, ['status' => 'delivered']);
+
+        $this->assertEquals('pending', $updated->status->value);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'pending']);
     }
 
     public function test_delete_removes_order_from_database(): void
@@ -95,7 +106,7 @@ class OrderServiceTest extends TestCase
         $user  = User::factory()->create(['role' => 'user']);
         $order = Order::factory()->create();
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectException(HttpException::class);
 
         $this->service->authorize($user, $order);
     }

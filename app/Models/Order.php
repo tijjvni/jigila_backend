@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\OrderAuditLog;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -35,13 +35,13 @@ use App\Models\OrderAuditLog;
  * @property OrderStatus $status
  * @property string|null $bid_status
  * @property string|null $out_bid_price
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
  */
 class Order extends Model
 {
-    use HasFactory, SoftDeletes, Prunable;
+    use HasFactory, Prunable, SoftDeletes;
 
     protected $fillable = [
         'user_id',

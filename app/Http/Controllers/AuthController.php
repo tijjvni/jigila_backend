@@ -45,8 +45,8 @@ class AuthController extends Controller
         $otp = $this->authService->forgotPassword($request->validated('email'));
 
         return $this->okResponse(array_filter([
-            'message' => 'OTP sent to your email.',
-            'otp'     => config('app.debug') ? $otp : null,
+            'message' => 'If an account exists for that email, an OTP has been sent.',
+            'otp'     => app()->isLocal() ? $otp : null,
         ]));
     }
 

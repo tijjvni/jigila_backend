@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ticket extends Model
 {
-    use HasFactory, SoftDeletes, Prunable;
+    use HasFactory, Prunable, SoftDeletes;
 
     protected $fillable = ['user_id', 'ticket_number', 'subject', 'status'];
 

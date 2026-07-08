@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SlidingTokenExpiry;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,16 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role'       => \App\Http\Middleware\CheckRole::class,
-            'permission' => \App\Http\Middleware\CheckPermission::class,
-            'active'     => \App\Http\Middleware\EnsureUserIsActive::class,
+            'role'       => CheckRole::class,
+            'permission' => CheckPermission::class,
+            'active'     => EnsureUserIsActive::class,
         ]);
-        $middleware->appendToGroup('api', \App\Http\Middleware\SlidingTokenExpiry::class);
+        $middleware->appendToGroup('api', SlidingTokenExpiry::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+        $exceptions->render(function (ModelNotFoundException $e, $request) {
             if ($request->is('api/*')) {
                 $model = class_basename($e->getModel());
+
                 return response()->json(['message' => "{$model} not found."], 404);
             }
         });

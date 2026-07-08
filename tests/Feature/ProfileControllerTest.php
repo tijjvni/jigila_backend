@@ -37,14 +37,54 @@ class ProfileControllerTest extends TestCase
             ->assertJsonPath('data.phone', '09011111111');
     }
 
-    public function test_user_can_change_email(): void
+    public function test_user_can_change_email_with_current_password(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/profile', [
+                'email'            => 'new@example.com',
+                'current_password' => 'password',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('data.email', 'new@example.com');
+    }
+
+    public function test_email_change_requires_current_password(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->putJson('/api/v1/profile', ['email' => 'new@example.com'])
-            ->assertStatus(200)
-            ->assertJsonPath('data.email', 'new@example.com');
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['current_password']);
+    }
+
+    public function test_email_change_rejects_wrong_current_password(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/profile', [
+                'email'            => 'new@example.com',
+                'current_password' => 'wrong-password',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['current_password']);
+    }
+
+    public function test_email_change_resets_verification(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/profile', [
+                'email'            => 'new@example.com',
+                'current_password' => 'password',
+            ])
+            ->assertStatus(200);
+
+        $this->assertNull($user->fresh()->email_verified_at);
     }
 
     public function test_email_must_be_unique_across_users(): void
@@ -53,7 +93,10 @@ class ProfileControllerTest extends TestCase
         $user     = User::factory()->create();
 
         $this->actingAs($user)
-            ->putJson('/api/v1/profile', ['email' => 'taken@example.com'])
+            ->putJson('/api/v1/profile', [
+                'email'            => 'taken@example.com',
+                'current_password' => 'password',
+            ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
@@ -63,7 +106,10 @@ class ProfileControllerTest extends TestCase
         $user = User::factory()->create(['email' => 'mine@example.com']);
 
         $this->actingAs($user)
-            ->putJson('/api/v1/profile', ['email' => 'mine@example.com'])
+            ->putJson('/api/v1/profile', [
+                'email'            => 'mine@example.com',
+                'current_password' => 'password',
+            ])
             ->assertStatus(200);
     }
 

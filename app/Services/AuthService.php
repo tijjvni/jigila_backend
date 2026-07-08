@@ -34,7 +34,7 @@ class AuthService
             ->orWhere('phone', $login)
             ->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (!$user || !Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'login' => ['The provided credentials are incorrect.'],
             ]);
@@ -55,8 +55,16 @@ class AuthService
         }
     }
 
-    public function forgotPassword(string $email): string
+    public function forgotPassword(string $email): ?string
     {
+        // Silently no-op for unknown emails so the response never reveals
+        // whether an address is registered (prevents user enumeration).
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return null;
+        }
+
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         DB::table('password_reset_tokens')->upsert(
@@ -65,7 +73,6 @@ class AuthService
             ['token', 'created_at']
         );
 
-        $user = User::where('email', $email)->first();
         $this->notifications->sendForgotPassword($user, $otp);
 
         return $otp;
@@ -75,7 +82,7 @@ class AuthService
     {
         $record = DB::table('password_reset_tokens')->where('email', $email)->first();
 
-        if (! $record || ! Hash::check($otp, $record->token)) {
+        if (!$record || !Hash::check($otp, $record->token)) {
             throw ValidationException::withMessages(['otp' => ['Invalid or expired OTP.']]);
         }
 

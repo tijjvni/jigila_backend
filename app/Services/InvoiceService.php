@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\InvoiceType;
 use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\OrderAuditLog;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -15,17 +16,18 @@ use Illuminate\Support\Str;
 class InvoiceService
 {
     public function __construct(
-        private PaystackService     $paystack,
+        private PaystackService $paystack,
         private NotificationService $notifications,
     ) {}
 
     public function create(
-        User        $user,
-        ?Order      $order,
+        User $user,
+        ?Order $order,
         InvoiceType $type,
-        string  $description,
-        float   $amount,
-        array   $metadata = []
+        string $description,
+        float $amount,
+        array $metadata = [],
+        ?User $actor = null,
     ): Invoice {
         $paymentUrl       = null;
         $paymentReference = null;
@@ -98,6 +100,21 @@ class InvoiceService
             ]);
         });
 
+        if ($order) {
+            OrderAuditLog::create([
+                'order_id'   => $order->id,
+                'user_id'    => $actor?->id ?? $user->id,
+                'action'     => 'invoice_generated',
+                'old_values' => [],
+                'new_values' => [
+                    'invoice_number' => $invoice->invoice_number,
+                    'type'           => $invoice->type,
+                    'amount'         => $invoice->amount,
+                    'description'    => $invoice->description,
+                ],
+            ]);
+        }
+
         $this->notifications->sendInvoiceCreated($invoice->setRelation('user', $user));
 
         return $invoice;
@@ -151,6 +168,21 @@ class InvoiceService
             'payment_reference' => $reference,
             'metadata'          => array_merge($invoice->metadata ?? [], ['payment' => $paymentMeta]),
         ]);
-    }
 
+        if ($invoice->order_id) {
+            OrderAuditLog::create([
+                'order_id'   => $invoice->order_id,
+                'user_id'    => null,
+                'action'     => 'payment_received',
+                'old_values' => ['status' => 'pending'],
+                'new_values' => [
+                    'status'         => 'paid',
+                    'reference'      => $reference,
+                    'invoice_number' => $invoice->invoice_number,
+                    'amount'         => $invoice->amount,
+                    'type'           => $invoice->type,
+                ],
+            ]);
+        }
+    }
 }

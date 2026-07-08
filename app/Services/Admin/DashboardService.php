@@ -92,7 +92,9 @@ class DashboardService
                     : json_decode($order->services, true) ?? [];
 
                 $count = count($services);
-                if ($count === 0) return;
+                if ($count === 0) {
+                    return;
+                }
 
                 $split = (float) $order->bid_price / $count;
                 foreach ($services as $service) {
@@ -108,7 +110,9 @@ class DashboardService
     private function completionRate(): float
     {
         $total = Order::count();
-        if ($total === 0) return 0.0;
+        if ($total === 0) {
+            return 0.0;
+        }
 
         $completed = Order::where('status', 'delivered')->count();
 

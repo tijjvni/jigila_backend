@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
+use App\Notifications\VerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Invoice;
-use App\Models\Ticket;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 /**
  * @property int $id
@@ -26,15 +26,15 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
  * @property string $password
  * @property string $role
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $email_verified_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $email_verified_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Prunable;
+    use HasApiTokens, HasFactory, Notifiable, Prunable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -95,7 +95,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->role === 'admin') return true;
+        if ($this->role === 'admin') {
+            return true;
+        }
 
         if ($this->permissionsCache === null) {
             $this->loadMissing('adminRoles');
@@ -104,7 +106,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->unique()->values()->all();
         }
 
-        if (in_array($permission, $this->permissionsCache, true)) return true;
+        if (in_array($permission, $this->permissionsCache, true)) {
+            return true;
+        }
 
         if (str_ends_with($permission, '.view')) {
             return in_array(substr($permission, 0, -5) . '.manage', $this->permissionsCache, true);
@@ -115,7 +119,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new \App\Notifications\VerifyEmail());
+        $this->notify(new VerifyEmail);
     }
 
     public function prunable(): Builder

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -19,18 +20,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $description
  * @property float $amount
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $due_date
- * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property Carbon|null $due_date
+ * @property Carbon|null $paid_at
  * @property string|null $payment_reference
  * @property string|null $payment_url
  * @property array|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
  */
 class Invoice extends Model
 {
-    use HasFactory, SoftDeletes, Prunable;
+    use HasFactory, Prunable, SoftDeletes;
 
     protected $fillable = [
         'user_id',

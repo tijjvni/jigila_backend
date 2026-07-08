@@ -17,7 +17,7 @@ enum DeparturePort: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::BaltimoreMD    => 'Port of Baltimore, MD',
             self::NewarkNJ       => 'Port of Newark / New York, NJ',
             self::HoustonTX      => 'Port of Houston (Barbours Cut), TX',

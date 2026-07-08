@@ -16,7 +16,7 @@ class AdminRoleResource extends JsonResource
             'permissions' => $this->permissions ?? [],
             'users'       => AdminUserResource::collection($this->whenLoaded('users')),
             'user_count'  => $this->when(
-                ! $this->relationLoaded('users'),
+                !$this->relationLoaded('users'),
                 fn () => $this->users_count ?? $this->users()->count()
             ),
             'created_at'  => $this->created_at,

@@ -26,19 +26,39 @@ class OrderService
         return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
-    public function updateStatus(Order $order, string $status): Order
+    public function updateStatus(Order $order, string $status, User $actor): Order
     {
+        $old = $order->status;
+
         $order->forceFill(['status' => $status])->save();
+
+        OrderAuditLog::create([
+            'order_id'   => $order->id,
+            'user_id'    => $actor->id,
+            'action'     => 'status_changed',
+            'old_values' => ['status' => $old],
+            'new_values' => ['status' => $order->status],
+        ]);
 
         return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function updateBid(Order $order, array $data, ?User $actor = null): Order
     {
+        $old = ['bid_status' => $order->bid_status, 'out_bid_price' => $order->out_bid_price];
+
         $order->forceFill([
             'bid_status'    => $data['bid_status'],
             'out_bid_price' => $data['out_bid_price'] ?? null,
         ])->save();
+
+        OrderAuditLog::create([
+            'order_id'   => $order->id,
+            'user_id'    => $actor?->id,
+            'action'     => 'bid_updated',
+            'old_values' => $old,
+            'new_values' => ['bid_status' => $order->bid_status, 'out_bid_price' => $order->out_bid_price],
+        ]);
 
         // When the admin confirms the bid is won, auto-generate the remaining 50% balance invoice.
         // Guard against duplicate: only create if no bid_balance invoice exists yet.
@@ -48,35 +68,35 @@ class OrderService
                 ->exists();
 
             if (!$alreadyIssued) {
-                $balanceInvoice = $this->invoiceService->create(
+                $this->invoiceService->create(
                     $order->user,
                     $order,
                     InvoiceType::BidBalance,
                     '50% Balance Payment – Auction Bid Confirmed Won',
                     round((float) $order->bid_price * 0.5, 2),
+                    actor: $actor,
                 );
-
-                OrderAuditLog::create([
-                    'order_id'   => $order->id,
-                    'user_id'    => $actor?->id,
-                    'action'     => 'invoice_generated',
-                    'old_values' => [],
-                    'new_values' => [
-                        'invoice_number' => $balanceInvoice->invoice_number,
-                        'type'           => $balanceInvoice->type,
-                        'amount'         => $balanceInvoice->amount,
-                        'description'    => $balanceInvoice->description,
-                    ],
-                ]);
             }
         }
 
         return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
-    public function updateLocation(Order $order, array $data): Order
+    public function updateLocation(Order $order, array $data, User $actor): Order
     {
+        $locationFields = ['pickup_location', 'departure_port', 'destination_port'];
+        $old            = $order->only($locationFields);
+        $incoming       = array_filter($data, fn ($v) => $v !== null);
+
         $order->update($data);
+
+        OrderAuditLog::create([
+            'order_id'   => $order->id,
+            'user_id'    => $actor->id,
+            'action'     => 'location_updated',
+            'old_values' => array_intersect_key($old, $incoming),
+            'new_values' => $incoming,
+        ]);
 
         return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }

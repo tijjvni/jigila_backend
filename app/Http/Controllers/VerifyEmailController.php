@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class VerifyEmailController extends Controller
@@ -12,9 +13,9 @@ class VerifyEmailController extends Controller
     {
         $frontendUrl = config('app.frontend_url');
 
-        $user = \App\Models\User::findOrFail($id);
+        $user = User::findOrFail($id);
 
-        if (! hash_equals($hash, sha1($user->getEmailForVerification()))) {
+        if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
             return redirect("{$frontendUrl}/login?verified=0&error=invalid_link");
         }
 
@@ -32,11 +33,11 @@ class VerifyEmailController extends Controller
         $user = $request->user();
 
         if ($user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email already verified.'], 422);
+            return $this->errorResponse('Email already verified.', 422);
         }
 
         $user->sendEmailVerificationNotification();
 
-        return response()->json(['message' => 'Verification email sent.']);
+        return $this->messageResponse('Verification email sent.');
     }
 }

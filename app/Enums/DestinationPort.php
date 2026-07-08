@@ -19,7 +19,7 @@ enum DestinationPort: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::LagosApapa          => 'Port of Apapa, Lagos – Nigeria',
             self::TinCanLagos         => 'Tin Can Island Port, Lagos – Nigeria',
             self::TemaGhana           => 'Port of Tema, Accra – Ghana',

@@ -15,18 +15,18 @@ class UserService
     {
         $query = User::with('adminRoles')->latest();
 
-        if (! empty($filters['type'])) {
+        if (!empty($filters['type'])) {
             $query->where('role', $filters['type'] === 'admin' ? 'admin' : 'user');
         }
 
-        if (! empty($filters['status'])) {
+        if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (! empty($filters['search'])) {
+        if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', "%{$filters['search']}%")
-                  ->orWhere('email', 'like', "%{$filters['search']}%");
+                    ->orWhere('email', 'like', "%{$filters['search']}%");
             });
         }
 
@@ -100,6 +100,9 @@ class UserService
 
     public function delete(User $user): void
     {
+        // Soft delete keeps the row, so free the unique email for re-registration.
+        $user->forceFill(['email' => "deleted_{$user->id}_{$user->email}"])->save();
+
         $user->delete();
     }
 }
