@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Http\Requests\Admin;
+
+use App\Enums\ShippingLine;
+use App\Enums\ShippingType;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateOrderShippingRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->role === 'admin';
+    }
+
+    public function rules(): array
+    {
+        return [
+            'vessel_name'              => 'nullable|string|max:255',
+            'container_number'         => 'nullable|string|max:64',
+            'shipping_tracking_number' => 'nullable|string|max:64',
+            'shipping_line'            => ['nullable', Rule::in(ShippingLine::values())],
+            'shipping_type'            => ['nullable', Rule::in(ShippingType::values())],
+            'current_vessel_location'  => 'nullable|string|max:255',
+            'port_received_at'         => 'nullable|date',
+            // An arrival window reads better than a raw day count (BUG-057),
+            // so the admin sets a start and an end date.
+            'eta_start'                => 'nullable|date',
+            'eta_end'                  => 'nullable|date|after_or_equal:eta_start',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'eta_end.after_or_equal' => 'The end of the arrival window must fall on or after the start.',
+        ];
+    }
+}

@@ -12,6 +12,17 @@
             <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
+    <!--
+      Benchmarks are measurement harnesses, not assertions about behaviour: they
+      seed tens of thousands of rows and print timings. Excluded from the default
+      run to keep it fast and quiet. Run them deliberately with:
+          php artisan test (double dash)group=benchmark
+    -->
+    <groups>
+        <exclude>
+            <group>benchmark</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

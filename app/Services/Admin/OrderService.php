@@ -8,11 +8,15 @@ use App\Models\Order;
 use App\Models\OrderAuditLog;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderService
 {
-    public function __construct(private InvoiceService $invoiceService) {}
+    public function __construct(
+        private InvoiceService $invoiceService,
+        private NotificationService $notifications,
+    ) {}
 
     public function list(int $perPage = 15): LengthAwarePaginator
     {
@@ -80,6 +84,52 @@ class OrderService
         }
 
         return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
+    }
+
+    /**
+     * Vessel, container, tracking number, live position and arrival window
+     * (BUG-034 / BUG-054 / BUG-057).
+     *
+     * Only keys whose value actually changed are written, so refreshing just
+     * `current_vessel_location` neither wipes the rest of the record nor spams
+     * the customer with a "shipping updated" notification for a no-op save.
+     */
+    public function updateShipping(Order $order, array $data, User $actor): Order
+    {
+        $old     = $order->only(array_keys($data));
+        $changed = array_filter(
+            $data,
+            function ($value, $key) use ($old) {
+                $current = $old[$key] ?? null;
+
+                if ($current instanceof \BackedEnum) {
+                    $current = $current->value;
+                } elseif ($current instanceof \DateTimeInterface) {
+                    $current = $current->format('Y-m-d');
+                }
+
+                return (string) $current !== (string) $value;
+            },
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        if ($changed === []) {
+            return $this->find($order);
+        }
+
+        $order->update($changed);
+
+        OrderAuditLog::create([
+            'order_id'   => $order->id,
+            'user_id'    => $actor->id,
+            'action'     => 'shipping_updated',
+            'old_values' => array_intersect_key($old, $changed),
+            'new_values' => $changed,
+        ]);
+
+        $this->notifications->notifyShippingUpdated($order);
+
+        return $this->find($order);
     }
 
     public function updateLocation(Order $order, array $data, User $actor): Order

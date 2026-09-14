@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\InvoiceType;
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderAuditLog;
 use App\Models\User;
@@ -79,6 +80,57 @@ class OrderService
     public function delete(Order $order): void
     {
         $order->delete();
+    }
+
+    /**
+     * Cancel an order (BUG-032 / BUG-064).
+     *
+     * Customers may cancel only while the order is still pending or processing;
+     * once it passes an operational milestone (pickup onwards) Jigila has
+     * already committed money and the customer has to go through support.
+     * Admins can cancel at any stage. Cancelling twice is a no-op error rather
+     * than a silent overwrite, so the original audit entry survives.
+     */
+    public function cancel(Order $order, User $actor, string $reason): Order
+    {
+        if ($order->status === OrderStatus::Cancelled) {
+            abort(422, 'This order has already been cancelled.');
+        }
+
+        if ($order->status === OrderStatus::Delivered) {
+            abort(422, 'A delivered order can no longer be cancelled.');
+        }
+
+        $isAdmin = $actor->role === 'admin';
+
+        if (!$isAdmin && $order->passedOperationalMilestone()) {
+            abort(422, 'This order has passed an operational milestone and can no longer be cancelled online. Please contact support.');
+        }
+
+        $old = $order->status;
+
+        $order->forceFill([
+            'status'              => OrderStatus::Cancelled,
+            'cancelled_at'        => now(),
+            'cancellation_reason' => $reason,
+            'cancelled_by'        => $actor->id,
+        ])->save();
+
+        OrderAuditLog::create([
+            'order_id'   => $order->id,
+            'user_id'    => $actor->id,
+            'action'     => 'order_cancelled',
+            'old_values' => ['status' => $old],
+            'new_values' => [
+                'status' => OrderStatus::Cancelled->value,
+                'reason' => $reason,
+                'free'   => $order->withinFreeCancellationWindow(),
+            ],
+        ]);
+
+        $this->notifications->notifyOrderCancelled($order, $actor);
+
+        return $order->load(['user', 'invoices', 'auditLogs' => fn ($q) => $q->where('action', 'status_changed')]);
     }
 
     public function authorize(User $user, Order $order): void

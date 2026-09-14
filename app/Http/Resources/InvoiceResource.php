@@ -8,6 +8,17 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class InvoiceResource extends JsonResource
 {
+    /**
+     * Whether this representation includes the heavy `metadata` blob.
+     *
+     * False here (list representation); InvoiceDetailResource overrides it.
+     * Still admin-gated either way — metadata is internal payment data.
+     */
+    protected function includesMetadata(): bool
+    {
+        return false;
+    }
+
     public function toArray(Request $request): array
     {
         return [
@@ -26,8 +37,23 @@ class InvoiceResource extends JsonResource
             'status'         => $this->status,
             'due_date'       => $this->due_date?->toDateString(),
             'paid_at'        => $this->paid_at,
+
+            // Refund processing (BUG-055). `status` stays `paid` throughout —
+            // a refund is a separate axis so payment history is never rewritten.
+            'refund_status'       => $this->refund_status,
+            'refund_amount'       => $this->refund_amount,
+            'refund_reason'       => $this->refund_reason,
+            'refund_requested_at' => $this->refund_requested_at,
+            'refund_processed_at' => $this->refund_processed_at,
+
             'payment_url'    => $this->payment_url,
-            'metadata'       => $this->when(auth()->user()?->role === 'admin', $this->metadata),
+
+            // `metadata` carries the creation context plus the full Paystack
+            // payment blob — roughly half the serialized size of a paid invoice,
+            // and never rendered in a list. It is returned by
+            // InvoiceDetailResource only; see that class.
+            'metadata'       => $this->when($this->includesMetadata(), fn () => $this->metadata),
+
             'order_id'       => $this->order_id,
             'order_vin'      => $this->whenLoaded('order', fn () => $this->order->vin),
             'order'          => $this->whenLoaded('order', fn () => [

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\SetCacheHeaders;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'       => CheckRole::class,
             'permission' => CheckPermission::class,
             'active'     => EnsureUserIsActive::class,
+            // Lets a route opt into ETag/Cache-Control revalidation, e.g.
+            // `cache.headers:public;max_age=300;etag` on /config.
+            'cache.headers' => SetCacheHeaders::class,
         ]);
         $middleware->appendToGroup('api', SlidingTokenExpiry::class);
     })

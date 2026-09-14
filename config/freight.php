@@ -55,11 +55,34 @@ return [
     ],
 
     // ── Trucking condition surcharges (flat USD add-on) ──────────────────────
+    // These feed the trucking *estimate*. They are deliberately separate from
+    // `condition_disclosures` below, which is the all-in special-handling fee
+    // quoted to the customer at selection time.
     'trucking_condition_surcharges' => [
         'run_and_drive' => 0,
         'non_runner'    => 225,
         'forklift'      => 375,
     ],
+
+    // ── Condition disclosures shown at selection time (BUG-044 / BUG-049) ────
+    // Rendered as an inline notice the moment a customer picks the condition,
+    // so the extra handling cost is never a surprise on the invoice.
+    // Vehicles in `large_vehicle_types` are quoted individually rather than at
+    // the flat fee (BUG-077): minivan-and-above need heavier equipment.
+    'condition_disclosures' => [
+        'non_runner' => [
+            'label'       => 'Non-Runner',
+            'fee'         => 475,
+            'description' => 'Vehicle cannot start or move on its own. Extra charges apply for special handling.',
+        ],
+        'forklift' => [
+            'label'       => 'Forklift',
+            'fee'         => 600,
+            'description' => 'Vehicle cannot be driven and requires forklift handling. Extra charges apply.',
+        ],
+    ],
+
+    'large_vehicle_types' => ['minivan', 'pickup_full', 'commercial_van'],
 
     // ── ±5% display range ────────────────────────────────────────────────────
     'range_pct' => 0.05,

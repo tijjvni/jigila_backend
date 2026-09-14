@@ -12,6 +12,7 @@ use App\Http\Controllers\ConfigController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderDocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VerifyEmailController;
@@ -22,8 +23,13 @@ use Illuminate\Support\Facades\Route;
 Route::post('webhooks/paystack', [WebhookController::class, 'paystack'])->middleware('throttle:120,1');
 
 Route::prefix('v1')->group(function () {
-    Route::get('config', ConfigController::class);
-    Route::get('config/stats', [ConfigController::class, 'stats']);
+    // ~25 KB and identical for every visitor, but fetched on nearly every page
+    // load. An ETag lets the browser revalidate and take a 304 with no body;
+    // the short max-age keeps an exchange-rate change visible quickly.
+    Route::middleware('cache.headers:public;max_age=300;etag')->group(function () {
+        Route::get('config', ConfigController::class);
+        Route::get('config/stats', [ConfigController::class, 'stats']);
+    });
 
     // ── Auth (no token required) ──────────────────────────────────────────────
     Route::prefix('auth')->group(function () {
@@ -61,10 +67,19 @@ Route::prefix('v1')->group(function () {
         Route::put('orders/{order}', [OrderController::class, 'update']);
         Route::delete('orders/{order}', [OrderController::class, 'destroy']);
         Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:30,1');
+        Route::post('orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('throttle:10,1');
+
+        // Order documents — listing and download are open to the order's owner
+        // and to admins; upload and delete are admin-only (registered below).
+        Route::get('orders/{order}/documents', [OrderDocumentController::class, 'index']);
+        Route::get('orders/{order}/documents/{document}/download', [OrderDocumentController::class, 'download'])
+            ->name('orders.documents.download');
 
         // Invoices
         Route::get('invoices', [InvoiceController::class, 'index']);
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::post('invoices/{invoice}/refund-request', [InvoiceController::class, 'requestRefund'])
+            ->middleware('throttle:10,1');
 
         // Notifications
         Route::get('notifications', [NotificationController::class, 'index']);
@@ -97,6 +112,12 @@ Route::prefix('v1')->group(function () {
                 Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus']);
                 Route::patch('orders/{order}/bid', [AdminOrderController::class, 'updateBid']);
                 Route::patch('orders/{order}/location', [AdminOrderController::class, 'updateLocation']);
+                Route::patch('orders/{order}/shipping', [AdminOrderController::class, 'updateShipping']);
+                Route::post('orders/{order}/cancel', [AdminOrderController::class, 'cancel']);
+
+                // Document upload/delete — admins only
+                Route::post('orders/{order}/documents', [OrderDocumentController::class, 'store']);
+                Route::delete('orders/{order}/documents/{document}', [OrderDocumentController::class, 'destroy']);
             });
 
             // Invoices — read
@@ -108,6 +129,7 @@ Route::prefix('v1')->group(function () {
             // Invoices — write
             Route::middleware('permission:invoices.manage')->group(function () {
                 Route::post('orders/{order}/invoices', [AdminInvoiceController::class, 'store']);
+                Route::patch('invoices/{invoice}/refund', [AdminInvoiceController::class, 'updateRefund']);
             });
 
             // Users — read
