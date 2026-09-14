@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CancelOrderRequest;
 use App\Http\Requests\Order\StoreOrderRequest;
 use App\Http\Requests\Order\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
@@ -40,6 +41,15 @@ class OrderController extends Controller
         $this->orderService->authorize($request->user(), $order);
 
         return $this->okResponse(new OrderResource($this->orderService->update($order, $request->validated())));
+    }
+
+    public function cancel(CancelOrderRequest $request, Order $order): JsonResponse
+    {
+        $this->orderService->authorize($request->user(), $order);
+
+        $cancelled = $this->orderService->cancel($order, $request->user(), $request->validated('reason'));
+
+        return $this->okResponse(new OrderResource($cancelled));
     }
 
     public function destroy(Request $request, Order $order): JsonResponse

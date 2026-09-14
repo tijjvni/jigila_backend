@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AuctionSource;
+use App\Enums\DocumentType;
 use App\Enums\OrderStatus;
 use App\Enums\Permission;
 use App\Enums\ServiceType;
+use App\Enums\ShippingLine;
+use App\Enums\ShippingType;
 use App\Enums\VehicleCondition;
 use App\Models\Order;
 use App\Models\Setting;
@@ -42,6 +45,34 @@ class ConfigController extends Controller
                 ->map(fn ($label, $value) => compact('value', 'label'))
                 ->values()
                 ->all(),
+
+            // Ocean-leg options an admin attaches to an order (BUG-054)
+            'shipping_lines' => collect(ShippingLine::labels())
+                ->map(fn ($label, $value) => compact('value', 'label'))
+                ->values()
+                ->all(),
+
+            'shipping_types' => collect(ShippingType::labels())
+                ->map(fn ($label, $value) => compact('value', 'label'))
+                ->values()
+                ->all(),
+
+            // Shipping paperwork categories (BUG-035)
+            'document_types' => collect(DocumentType::labels())
+                ->map(fn ($label, $value) => compact('value', 'label'))
+                ->values()
+                ->all(),
+
+            // Special-handling notices shown at condition selection (BUG-044 / BUG-049)
+            'condition_disclosures' => $freightPorts['condition_disclosures'],
+            'large_vehicle_types'   => $freightPorts['large_vehicle_types'],
+
+            // Cancellation copy is driven by the same value the API enforces,
+            // so the policy shown and the policy applied cannot drift (BUG-064).
+            'cancellation_policy' => [
+                'free_window_minutes' => (int) config('orders.free_cancellation_minutes'),
+                'cancellable_statuses' => [OrderStatus::Pending->value, OrderStatus::Processing->value],
+            ],
 
             'user_roles' => [
                 ['value' => 'user',  'label' => 'Portal User'],

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceType;
+use App\Enums\RefundStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,17 +47,51 @@ class Invoice extends Model
         'payment_reference',
         'payment_url',
         'metadata',
+        'last_reminded_at',
+        'reminder_count',
+        'refund_status',
+        'refund_amount',
+        'refund_reason',
+        'refund_requested_at',
+        'refund_processed_at',
+        'refund_processed_by',
     ];
 
     protected function casts(): array
     {
         return [
-            'type'     => InvoiceType::class,
-            'amount'   => 'decimal:2',
-            'paid_at'  => 'datetime',
-            'due_date' => 'date',
-            'metadata' => 'array',
+            'type'                => InvoiceType::class,
+            'amount'              => 'decimal:2',
+            'paid_at'             => 'datetime',
+            'due_date'            => 'date',
+            'metadata'            => 'array',
+            'last_reminded_at'    => 'datetime',
+            'reminder_count'      => 'integer',
+            'refund_status'       => RefundStatus::class,
+            'refund_amount'       => 'decimal:2',
+            'refund_requested_at' => 'datetime',
+            'refund_processed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Unpaid invoices that are due another hour-based reminder (BUG-033).
+     */
+    public function scopeDueForReminder(Builder $query): Builder
+    {
+        $intervalHours = (int) config('orders.payment_reminder_interval_hours', 24);
+        $cutoff        = now()->subHours($intervalHours);
+
+        return $query->where('status', 'pending')
+            ->where('reminder_count', '<', (int) config('orders.payment_reminder_max', 5))
+            // Never remind before a full interval has elapsed — for an invoice
+            // that has had no reminder yet, the clock starts at creation, so a
+            // customer is not nagged seconds after the invoice is raised.
+            ->where(fn (Builder $q) => $q
+                ->where(fn (Builder $fresh) => $fresh
+                    ->whereNull('last_reminded_at')
+                    ->where('created_at', '<=', $cutoff))
+                ->orWhere('last_reminded_at', '<=', $cutoff));
     }
 
     public function user(): BelongsTo
