@@ -84,6 +84,65 @@ return [
 
     'large_vehicle_types' => ['minivan', 'pickup_full', 'commercial_van'],
 
+    // ── Port-authority condition reclassification ────────────────────────────
+    // A vehicle sold as a runner is sometimes downgraded on arrival at the
+    // export port (no fuel, flat tyres, dead battery). The admin records the
+    // condition the port authority actually confirmed, and the difference
+    // between the booked condition and the confirmed one is billable.
+    //
+    // Fees are the same schedule as `condition_disclosures` above and are read
+    // from it — do not duplicate the numbers here.
+    'condition_reclassification' => [
+        // Only a downgrade is billable; a vehicle confirmed in better condition
+        // than booked is recorded but never credited automatically.
+        'billable_upgrades' => [
+            'run_and_drive' => ['non_runner', 'forklift'],
+            'non_runner'    => ['forklift'],
+            'forklift'      => [],
+        ],
+    ],
+
+    // ── Platform charges ─────────────────────────────────────────────────────
+    // Flat or percentage fees added to every order on top of trucking + ocean
+    // freight. Rendered as their own lines in the customer cost breakdown and
+    // pre-filled on the admin invoice form, so a fee change never needs a code
+    // change in either portal.
+    //
+    // type   — 'flat'    : `amount` is USD
+    //          'percent' : `amount` is a percentage applied to `basis`
+    // basis  — percent only. 'freight' = trucking + ocean freight subtotal,
+    //          'total' = that subtotal plus all flat charges.
+    //
+    // ⚠ AMOUNTS BELOW ARE PLACEHOLDERS — the meeting notes named these three
+    //   charges but did not state their values. Confirm each `amount` before
+    //   this reaches production; nothing else needs to change.
+    'charges' => [
+        [
+            'key'         => 'jigila_flat_rate',
+            'label'       => 'Jigila flat rate',
+            'type'        => 'flat',
+            'amount'      => 250, // PLACEHOLDER
+            'basis'       => null,
+            'description' => 'Jigila service charge applied to every vehicle import.',
+        ],
+        [
+            'key'         => 'auction_account_handling',
+            'label'       => 'Auction account handling',
+            'type'        => 'flat',
+            'amount'      => 150, // PLACEHOLDER
+            'basis'       => null,
+            'description' => 'Handling of bidding, purchase and release through the Jigila auction account.',
+        ],
+        [
+            'key'         => 'fx_offshore',
+            'label'       => 'FX offshore charge',
+            'type'        => 'percent',
+            'amount'      => 1.5, // PLACEHOLDER
+            'basis'       => 'total',
+            'description' => 'Offshore currency conversion and transfer cost on the USD settlement.',
+        ],
+    ],
+
     // ── ±5% display range ────────────────────────────────────────────────────
     'range_pct' => 0.05,
 
@@ -94,72 +153,88 @@ return [
     //   $1650 coast (1650-2300 mi)  $2100 extreme (>2300 mi)
     //   AK $2700  HI $3200
     'trucking_sedan_rates' => [
-        //         bal    new    hou    sav    jax    mia    chs    lax    nor    pat
-        'al' => [1000,  1000,   575,   575,   400,   775,   575,  2100,   775,   575],
-        'ak' => [2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700,  2700],
-        'az' => [2100,  2100,  1000,  1650,  1650,  2100,  1650,   400,  2100,  1000],
-        'ar' => [1000,  1000,   575,   775,   775,  1000,   775,  1650,  1000,   400],
-        'ca' => [2100,  2100,  1300,  2100,  2100,  2100,  2100,   250,  2100,  1300],
-        'co' => [1650,  1650,  1000,  1650,  1650,  2100,  1650,  1000,  1650,  1000],
-        'ct' => [400,   250,  1650,  1000,  1000,  1300,   775,  2100,   400,  1650],
-        'de' => [250,   250,  1300,   775,   775,  1000,   775,  2100,   250,  1300],
-        'fl' => [1000,  1000,   775,   400,   250,   250,   400,  2100,   775,   775],
-        'ga' => [775,   775,   775,   250,   400,   575,   400,  2100,   575,   775],
-        'hi' => [3200,  3200,  3200,  3200,  3200,  3200,  3200,  3200,  3200,  3200],
-        'id' => [2100,  2100,  1650,  2100,  2100,  2100,  2100,  1000,  2100,  1650],
-        'il' => [775,   775,  1000,   775,  1000,  1300,   775,  2100,   775,  1000],
-        'in' => [575,   775,  1000,   775,   775,  1000,   775,  2100,   575,  1000],
-        'ia' => [1000,  1300,  1000,  1000,  1300,  1650,  1000,  1650,  1000,  1000],
-        'ks' => [1300,  1300,   775,  1000,  1300,  1300,  1000,  1650,  1300,   775],
-        'ky' => [575,   575,  1000,   575,   775,  1000,   575,  2100,   400,  1000],
-        'la' => [1000,  1300,   400,   575,   575,   775,   775,  1650,  1000,   400],
-        'me' => [575,   400,  1650,  1300,  1300,  1650,  1300,  2100,   575,  1650],
-        'md' => [250,   250,  1300,   775,   775,  1000,   575,  2100,   250,  1300],
-        'ma' => [400,   250,  1650,  1000,  1300,  1300,  1000,  2100,   575,  1650],
-        'mi' => [575,   575,  1300,  1000,  1000,  1300,  1000,  2100,   575,  1000],
-        'mn' => [1000,  1300,  1300,  1300,  1300,  1650,  1300,  1650,  1000,  1300],
-        'ms' => [1000,  1000,   400,   575,   575,   775,   575,  1650,  1000,   400],
-        'mo' => [1000,  1000,   775,  1000,  1000,  1300,  1000,  1650,  1000,   775],
-        'mt' => [1650,  2100,  1650,  2100,  2100,  2100,  2100,  1300,  1650,  1650],
-        'ne' => [1300,  1300,  1000,  1300,  1300,  1650,  1300,  1650,  1300,  1000],
-        'nv' => [2100,  2100,  1300,  2100,  2100,  2100,  2100,   400,  2100,  1300],
-        'nh' => [575,   400,  1650,  1300,  1300,  1300,  1000,  2100,   575,  1650],
-        'nj' => [250,   250,  1300,   775,   775,  1000,   775,  2100,   400,  1300],
-        'nm' => [2100,  2100,   775,  1650,  1650,  2100,  1650,   775,  1650,   775],
-        'ny' => [400,   250,  1650,  1000,  1000,  1300,  1000,  2100,   400,  1650],
-        'nc' => [400,   575,  1000,   400,   400,   775,   400,  2100,   250,  1000],
-        'nd' => [1300,  1650,  1650,  1650,  1650,  2100,  1650,  1650,  1300,  1300],
-        'oh' => [400,   575,  1300,   775,   775,  1000,   775,  2100,   400,  1000],
-        'ok' => [1300,  1300,   575,  1000,  1000,  1300,  1000,  1300,  1300,   400],
-        'or' => [2100,  2100,  2100,  2100,  2100,  2100,  2100,  1000,  2100,  2100],
-        'pa' => [250,   250,  1300,   775,   775,  1000,   775,  2100,   400,  1300],
-        'ri' => [400,   250,  1650,  1000,  1300,  1300,  1000,  2100,   575,  1650],
-        'sc' => [575,   775,  1000,   250,   400,   575,   250,  2100,   575,  1000],
-        'sd' => [1300,  1300,  1300,  1300,  1650,  2100,  1300,  1650,  1300,  1300],
-        'tn' => [575,   775,   775,   575,   575,  1000,   575,  2100,   575,   775],
-        'tx' => [1300,  1650,   400,  1000,  1000,  1300,  1000,  1300,  1300,   400],
-        'ut' => [2100,  2100,  1300,  2100,  2100,  2100,  2100,   775,  2100,  1300],
-        'vt' => [575,   400,  1650,  1300,  1300,  1650,  1000,  2100,   575,  1650],
-        'va' => [250,   400,  1000,   575,   575,  1000,   575,  2100,   250,  1000],
-        'wa' => [2100,  2100,  2100,  2100,  2100,  2100,  2100,  1000,  2100,  2100],
-        'wv' => [400,   575,  1000,   575,   775,  1000,   575,  2100,   400,  1000],
-        'wi' => [775,  1000,  1300,  1000,  1000,  1300,  1000,  2100,   775,  1300],
-        'wy' => [1650,  1650,  1300,  1650,  1650,  2100,  1650,  1000,  1650,  1300],
+        //         bal   dun   new   phl   wil   pvd   sav   jax   mia   fre
+        'al' => [1000, 1000, 1000, 1000, 1000, 1300,  575,  400,  775,  575],
+        'ak' => [2700, 2700, 2700, 2700, 2700, 2700, 2700, 2700, 2700, 2700],
+        'az' => [2100, 2100, 2100, 2100, 2100, 2100, 1650, 1650, 2100, 1000],
+        'ar' => [1000, 1000, 1000, 1000, 1000, 1300,  775,  775, 1000,  575],
+        'ca' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 1300],
+        'co' => [1650, 1650, 1650, 1650, 1650, 2100, 1650, 1650, 2100, 1000],
+        'ct' => [400,  400,  250,  400,  400,  250, 1000, 1000, 1300, 1650],
+        'de' => [250,  250,  250,  250,  250,  400,  775,  775, 1000, 1300],
+        'fl' => [1000, 1000, 1000, 1000, 1000, 1300,  400,  250,  250,  775],
+        'ga' => [775,  775,  775, 1000,  775, 1000,  250,  400,  575,  775],
+        'hi' => [3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200],
+        'id' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 1650],
+        'il' => [775,  775,  775,  775,  775, 1000,  775, 1000, 1300, 1000],
+        'in' => [575,  575,  775,  575,  575, 1000,  775,  775, 1000, 1000],
+        'ia' => [1000, 1000, 1300, 1000, 1000, 1650, 1000, 1300, 1650, 1000],
+        'ks' => [1300, 1300, 1300, 1300, 1300, 1650, 1000, 1300, 1300,  775],
+        'ky' => [575,  575,  575,  775,  575,  775,  575,  775, 1000, 1000],
+        'la' => [1000, 1000, 1300, 1000, 1000, 1650,  575,  575,  775,  400],
+        'me' => [575,  575,  400,  575,  575,  400, 1300, 1300, 1650, 1650],
+        'md' => [250,  250,  250,  250,  250,  400,  775,  775, 1000, 1300],
+        'ma' => [400,  400,  250,  400,  400,  250, 1000, 1300, 1300, 1650],
+        'mi' => [575,  575,  575,  575,  575,  775, 1000, 1000, 1300, 1300],
+        'mn' => [1000, 1000, 1300, 1000, 1000, 1650, 1300, 1300, 1650, 1300],
+        'ms' => [1000, 1000, 1000, 1000, 1000, 1300,  575,  575,  775,  400],
+        'mo' => [1000, 1000, 1000, 1000, 1000, 1300, 1000, 1000, 1300,  775],
+        'mt' => [1650, 1650, 2100, 1650, 1650, 2100, 2100, 2100, 2100, 1650],
+        'ne' => [1300, 1300, 1300, 1300, 1300, 1650, 1300, 1300, 1650, 1000],
+        'nv' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 1300],
+        'nh' => [575,  575,  400,  575,  575,  250, 1300, 1300, 1300, 1650],
+        'nj' => [250,  250,  250,  250,  250,  400,  775,  775, 1000, 1300],
+        'nm' => [2100, 2100, 2100, 2100, 2100, 2100, 1650, 1650, 2100,  775],
+        'ny' => [400,  400,  250,  400,  400,  250, 1000, 1000, 1300, 1650],
+        'nc' => [400,  400,  575,  575,  400,  775,  400,  400,  775, 1000],
+        'nd' => [1300, 1300, 1650, 1300, 1300, 2100, 1650, 1650, 2100, 1650],
+        'oh' => [400,  400,  575,  400,  400,  775,  775,  775, 1000, 1300],
+        'ok' => [1300, 1300, 1300, 1300, 1300, 1650, 1000, 1000, 1300,  575],
+        'or' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100],
+        'pa' => [250,  250,  250,  250,  250,  400,  775,  775, 1000, 1300],
+        'ri' => [400,  400,  250,  400,  400,  250, 1000, 1300, 1300, 1650],
+        'sc' => [575,  575,  775,  775,  575, 1000,  250,  400,  575, 1000],
+        'sd' => [1300, 1300, 1300, 1300, 1300, 1650, 1300, 1650, 2100, 1300],
+        'tn' => [575,  575,  775,  775,  575, 1000,  575,  575, 1000,  775],
+        'tx' => [1300, 1300, 1650, 1300, 1300, 2100, 1000, 1000, 1300,  400],
+        'ut' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 1300],
+        'vt' => [575,  575,  400,  575,  575,  400, 1300, 1300, 1650, 1650],
+        'va' => [250,  250,  400,  400,  250,  575,  575,  575, 1000, 1000],
+        'wa' => [2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100, 2100],
+        'wv' => [400,  400,  575,  575,  400,  775,  575,  775, 1000, 1000],
+        'wi' => [775,  775, 1000,  775,  775, 1300, 1000, 1000, 1300, 1300],
+        'wy' => [1650, 1650, 1650, 1650, 1650, 2100, 1650, 1650, 2100, 1300],
     ],
 
     // ── Departure ports ──────────────────────────────────────────────────────
     // shipping_offset: flat USD added to destination port Baltimore base rates
+    //
+    // The key order here is load-bearing: ConfigController zips it against each
+    // `trucking_sedan_rates` row, so the two must stay in the same sequence.
+    //
+    // `surcharge` is an optional flat USD fee added once to the order total when
+    // the port is selected. It is deliberately NOT folded into shipping_offset —
+    // the customer sees it as its own line rather than a silently inflated
+    // freight rate.
     'departure_ports' => [
-        'baltimore_md'    => ['label' => 'Port of Baltimore, MD',                       'shipping_offset' => 0],
-        'newark_nj'       => ['label' => 'Port of Newark / New York, NJ',                'shipping_offset' => 100],
-        'houston_tx'      => ['label' => 'Port of Houston (Barbours Cut), TX',           'shipping_offset' => 50],
-        'savannah_ga'     => ['label' => 'Port of Savannah, GA',                         'shipping_offset' => 150],
-        'jacksonville_fl' => ['label' => 'Port of Jacksonville (JAXPORT), FL',           'shipping_offset' => -50],
-        'miami_fl'        => ['label' => 'Port of Miami, FL',                            'shipping_offset' => -50],
-        'charleston_sc'   => ['label' => 'Port of Charleston, SC',                       'shipping_offset' => 50],
-        'los_angeles_ca'  => ['label' => 'Port of Los Angeles / Long Beach, CA',         'shipping_offset' => 350],
-        'norfolk_va'      => ['label' => 'Port of Norfolk (Virginia International), VA', 'shipping_offset' => 50],
-        'port_arthur_tx'  => ['label' => 'Port of Port Arthur / Orange, TX',             'shipping_offset' => 50],
+        'baltimore_md'         => ['label' => 'Port of Baltimore, MD',                  'shipping_offset' => 0],
+        'dundalk_baltimore_md' => ['label' => 'Dundalk Marine Terminal, Baltimore, MD', 'shipping_offset' => 0],
+        'newark_nj'            => ['label' => 'Port of Newark / New York, NJ',          'shipping_offset' => 100],
+        'philadelphia_pa'      => ['label' => 'Port of Philadelphia, PA',               'shipping_offset' => 100],
+        'wilmington_de'        => ['label' => 'Port of Wilmington, DE',                 'shipping_offset' => 100],
+        'providence_ri'        => ['label' => 'Port of Providence, RI',                 'shipping_offset' => 150],
+        'savannah_ga'          => ['label' => 'Port of Savannah, GA',                   'shipping_offset' => 150],
+        'jacksonville_fl'      => ['label' => 'Port of Jacksonville (JAXPORT), FL',     'shipping_offset' => -50],
+        'miami_fl'             => ['label' => 'Port of Miami, FL',                      'shipping_offset' => -50],
+        'freeport_tx'          => [
+            'label'           => 'Port Freeport, TX',
+            'shipping_offset' => 50,
+            'surcharge'       => [
+                'label'       => 'Port Freeport handling',
+                'amount'      => 100,
+                'description' => 'Flat terminal handling increment applied to every vehicle routed through Port Freeport, TX.',
+            ],
+        ],
     ],
 
     // ── Destination ports ────────────────────────────────────────────────────
@@ -173,16 +248,16 @@ return [
         'lagos_apapa' => [
             'label'        => 'Port of Apapa, Lagos – Nigeria',
             'transit_days' => [
-                'baltimore_md'    => '18–22',
-                'newark_nj'       => '20–25',
-                'houston_tx'      => '20–25',
-                'savannah_ga'     => '22–27',
-                'jacksonville_fl' => '18–22',
-                'miami_fl'        => '19–23',
-                'charleston_sc'   => '21–26',
-                'los_angeles_ca'  => '30–38',
-                'norfolk_va'      => '20–24',
-                'port_arthur_tx'  => '20–25',
+                'baltimore_md'         => '18–22',
+                'dundalk_baltimore_md' => '18–22',
+                'newark_nj'            => '20–25',
+                'philadelphia_pa'      => '20–25',
+                'wilmington_de'        => '20–25',
+                'providence_ri'        => '21–26',
+                'savannah_ga'          => '22–27',
+                'jacksonville_fl'      => '18–22',
+                'miami_fl'             => '19–23',
+                'freeport_tx'          => '20–25',
             ],
             'base_rates'   => [
                 'hatchback'      => [1050, 1200, 1400],
@@ -201,16 +276,16 @@ return [
         'tin_can_lagos' => [
             'label'        => 'Tin Can Island Port, Lagos – Nigeria',
             'transit_days' => [
-                'baltimore_md'    => '18–23',
-                'newark_nj'       => '20–26',
-                'houston_tx'      => '20–26',
-                'savannah_ga'     => '22–28',
-                'jacksonville_fl' => '18–23',
-                'miami_fl'        => '19–24',
-                'charleston_sc'   => '21–27',
-                'los_angeles_ca'  => '30–38',
-                'norfolk_va'      => '20–25',
-                'port_arthur_tx'  => '20–26',
+                'baltimore_md'         => '18–23',
+                'dundalk_baltimore_md' => '18–23',
+                'newark_nj'            => '20–26',
+                'philadelphia_pa'      => '20–26',
+                'wilmington_de'        => '20–26',
+                'providence_ri'        => '21–27',
+                'savannah_ga'          => '22–28',
+                'jacksonville_fl'      => '18–23',
+                'miami_fl'             => '19–24',
+                'freeport_tx'          => '20–26',
             ],
             'base_rates'   => [
                 'hatchback'      => [1050, 1200, 1400],
@@ -234,16 +309,16 @@ return [
         'lome_togo' => [
             'label'        => 'Port of Lomé, Togo',
             'transit_days' => [
-                'baltimore_md'    => '18–23',
-                'newark_nj'       => '20–25',
-                'houston_tx'      => '20–25',
-                'savannah_ga'     => '22–27',
-                'jacksonville_fl' => '18–23',
-                'miami_fl'        => '19–24',
-                'charleston_sc'   => '21–26',
-                'los_angeles_ca'  => '30–38',
-                'norfolk_va'      => '20–24',
-                'port_arthur_tx'  => '20–25',
+                'baltimore_md'         => '18–23',
+                'dundalk_baltimore_md' => '18–23',
+                'newark_nj'            => '20–25',
+                'philadelphia_pa'      => '20–25',
+                'wilmington_de'        => '20–25',
+                'providence_ri'        => '21–26',
+                'savannah_ga'          => '22–27',
+                'jacksonville_fl'      => '18–23',
+                'miami_fl'             => '19–24',
+                'freeport_tx'          => '20–25',
             ],
             'base_rates'   => [
                 'hatchback'      => [1000, 1150, 1350],
@@ -262,16 +337,16 @@ return [
         'tema_ghana' => [
             'label'        => 'Port of Tema, Accra – Ghana',
             'transit_days' => [
-                'baltimore_md'    => '20–24',
-                'newark_nj'       => '22–27',
-                'houston_tx'      => '22–27',
-                'savannah_ga'     => '24–29',
-                'jacksonville_fl' => '20–24',
-                'miami_fl'        => '21–25',
-                'charleston_sc'   => '23–28',
-                'los_angeles_ca'  => '32–40',
-                'norfolk_va'      => '22–26',
-                'port_arthur_tx'  => '22–27',
+                'baltimore_md'         => '20–24',
+                'dundalk_baltimore_md' => '20–24',
+                'newark_nj'            => '22–27',
+                'philadelphia_pa'      => '22–27',
+                'wilmington_de'        => '22–27',
+                'providence_ri'        => '23–28',
+                'savannah_ga'          => '24–29',
+                'jacksonville_fl'      => '20–24',
+                'miami_fl'             => '21–25',
+                'freeport_tx'          => '22–27',
             ],
             'base_rates'   => [
                 'hatchback'      => [1050, 1200, 1400],
@@ -290,16 +365,16 @@ return [
         'cotonou_benin' => [
             'label'        => 'Port of Cotonou, Benin',
             'transit_days' => [
-                'baltimore_md'    => '20–25',
-                'newark_nj'       => '22–27',
-                'houston_tx'      => '22–27',
-                'savannah_ga'     => '24–29',
-                'jacksonville_fl' => '20–25',
-                'miami_fl'        => '21–26',
-                'charleston_sc'   => '23–28',
-                'los_angeles_ca'  => '32–40',
-                'norfolk_va'      => '22–26',
-                'port_arthur_tx'  => '22–27',
+                'baltimore_md'         => '20–25',
+                'dundalk_baltimore_md' => '20–25',
+                'newark_nj'            => '22–27',
+                'philadelphia_pa'      => '22–27',
+                'wilmington_de'        => '22–27',
+                'providence_ri'        => '23–28',
+                'savannah_ga'          => '24–29',
+                'jacksonville_fl'      => '20–25',
+                'miami_fl'             => '21–26',
+                'freeport_tx'          => '22–27',
             ],
             'base_rates'   => [
                 'hatchback'      => [1050, 1200, 1400],
@@ -318,16 +393,16 @@ return [
         'abidjan_ivory_coast' => [
             'label'        => "Port of Abidjan, Côte d'Ivoire",
             'transit_days' => [
-                'baltimore_md'    => '22–27',
-                'newark_nj'       => '24–29',
-                'houston_tx'      => '24–29',
-                'savannah_ga'     => '26–31',
-                'jacksonville_fl' => '22–27',
-                'miami_fl'        => '23–28',
-                'charleston_sc'   => '25–30',
-                'los_angeles_ca'  => '34–42',
-                'norfolk_va'      => '24–28',
-                'port_arthur_tx'  => '24–29',
+                'baltimore_md'         => '22–27',
+                'dundalk_baltimore_md' => '22–27',
+                'newark_nj'            => '24–29',
+                'philadelphia_pa'      => '24–29',
+                'wilmington_de'        => '24–29',
+                'providence_ri'        => '25–30',
+                'savannah_ga'          => '26–31',
+                'jacksonville_fl'      => '22–27',
+                'miami_fl'             => '23–28',
+                'freeport_tx'          => '24–29',
             ],
             'base_rates'   => [
                 'hatchback'      => [1150, 1300, 1500],
@@ -346,16 +421,16 @@ return [
         'dakar_senegal' => [
             'label'        => 'Port of Dakar, Senegal',
             'transit_days' => [
-                'baltimore_md'    => '22–28',
-                'newark_nj'       => '24–30',
-                'houston_tx'      => '24–30',
-                'savannah_ga'     => '26–32',
-                'jacksonville_fl' => '22–28',
-                'miami_fl'        => '22–28',
-                'charleston_sc'   => '25–31',
-                'los_angeles_ca'  => '32–40',
-                'norfolk_va'      => '24–29',
-                'port_arthur_tx'  => '24–30',
+                'baltimore_md'         => '22–28',
+                'dundalk_baltimore_md' => '22–28',
+                'newark_nj'            => '24–30',
+                'philadelphia_pa'      => '24–30',
+                'wilmington_de'        => '24–30',
+                'providence_ri'        => '25–31',
+                'savannah_ga'          => '26–32',
+                'jacksonville_fl'      => '22–28',
+                'miami_fl'             => '22–28',
+                'freeport_tx'          => '24–30',
             ],
             'base_rates'   => [
                 'hatchback'      => [1200, 1350, 1550],
@@ -374,16 +449,16 @@ return [
         'conakry_guinea' => [
             'label'        => 'Port of Conakry, Guinea',
             'transit_days' => [
-                'baltimore_md'    => '26–32',
-                'newark_nj'       => '28–34',
-                'houston_tx'      => '28–34',
-                'savannah_ga'     => '30–36',
-                'jacksonville_fl' => '26–32',
-                'miami_fl'        => '27–33',
-                'charleston_sc'   => '29–35',
-                'los_angeles_ca'  => '36–44',
-                'norfolk_va'      => '28–33',
-                'port_arthur_tx'  => '28–34',
+                'baltimore_md'         => '26–32',
+                'dundalk_baltimore_md' => '26–32',
+                'newark_nj'            => '28–34',
+                'philadelphia_pa'      => '28–34',
+                'wilmington_de'        => '28–34',
+                'providence_ri'        => '29–35',
+                'savannah_ga'          => '30–36',
+                'jacksonville_fl'      => '26–32',
+                'miami_fl'             => '27–33',
+                'freeport_tx'          => '28–34',
             ],
             'base_rates'   => [
                 'hatchback'      => [1300, 1450, 1650],
@@ -402,16 +477,16 @@ return [
         'freetown_sierra_leone' => [
             'label'        => 'Port of Freetown, Sierra Leone',
             'transit_days' => [
-                'baltimore_md'    => '26–33',
-                'newark_nj'       => '28–35',
-                'houston_tx'      => '28–35',
-                'savannah_ga'     => '30–37',
-                'jacksonville_fl' => '26–33',
-                'miami_fl'        => '27–34',
-                'charleston_sc'   => '29–36',
-                'los_angeles_ca'  => '36–44',
-                'norfolk_va'      => '28–34',
-                'port_arthur_tx'  => '28–35',
+                'baltimore_md'         => '26–33',
+                'dundalk_baltimore_md' => '26–33',
+                'newark_nj'            => '28–35',
+                'philadelphia_pa'      => '28–35',
+                'wilmington_de'        => '28–35',
+                'providence_ri'        => '29–36',
+                'savannah_ga'          => '30–37',
+                'jacksonville_fl'      => '26–33',
+                'miami_fl'             => '27–34',
+                'freeport_tx'          => '28–35',
             ],
             'base_rates'   => [
                 'hatchback'      => [1350, 1500, 1700],
@@ -430,16 +505,16 @@ return [
         'monrovia_liberia' => [
             'label'        => 'Port of Monrovia (Freeport), Liberia',
             'transit_days' => [
-                'baltimore_md'    => '25–32',
-                'newark_nj'       => '27–34',
-                'houston_tx'      => '27–34',
-                'savannah_ga'     => '29–36',
-                'jacksonville_fl' => '25–32',
-                'miami_fl'        => '26–33',
-                'charleston_sc'   => '28–35',
-                'los_angeles_ca'  => '35–43',
-                'norfolk_va'      => '27–33',
-                'port_arthur_tx'  => '27–34',
+                'baltimore_md'         => '25–32',
+                'dundalk_baltimore_md' => '25–32',
+                'newark_nj'            => '27–34',
+                'philadelphia_pa'      => '27–34',
+                'wilmington_de'        => '27–34',
+                'providence_ri'        => '28–35',
+                'savannah_ga'          => '29–36',
+                'jacksonville_fl'      => '25–32',
+                'miami_fl'             => '26–33',
+                'freeport_tx'          => '27–34',
             ],
             'base_rates'   => [
                 'hatchback'      => [1350, 1500, 1700],
@@ -458,16 +533,16 @@ return [
         'banjul_gambia' => [
             'label'        => 'Port of Banjul, Gambia',
             'transit_days' => [
-                'baltimore_md'    => '26–34',
-                'newark_nj'       => '28–36',
-                'houston_tx'      => '28–36',
-                'savannah_ga'     => '30–38',
-                'jacksonville_fl' => '26–34',
-                'miami_fl'        => '26–34',
-                'charleston_sc'   => '29–37',
-                'los_angeles_ca'  => '36–44',
-                'norfolk_va'      => '28–35',
-                'port_arthur_tx'  => '28–36',
+                'baltimore_md'         => '26–34',
+                'dundalk_baltimore_md' => '26–34',
+                'newark_nj'            => '28–36',
+                'philadelphia_pa'      => '28–36',
+                'wilmington_de'        => '28–36',
+                'providence_ri'        => '29–37',
+                'savannah_ga'          => '30–38',
+                'jacksonville_fl'      => '26–34',
+                'miami_fl'             => '26–34',
+                'freeport_tx'          => '28–36',
             ],
             'base_rates'   => [
                 'hatchback'      => [1400, 1550, 1750],
@@ -486,16 +561,16 @@ return [
         'bissau_guinea_bissau' => [
             'label'        => 'Port of Bissau, Guinea-Bissau',
             'transit_days' => [
-                'baltimore_md'    => '27–35',
-                'newark_nj'       => '29–37',
-                'houston_tx'      => '29–37',
-                'savannah_ga'     => '31–39',
-                'jacksonville_fl' => '27–35',
-                'miami_fl'        => '27–35',
-                'charleston_sc'   => '30–38',
-                'los_angeles_ca'  => '37–45',
-                'norfolk_va'      => '29–36',
-                'port_arthur_tx'  => '29–37',
+                'baltimore_md'         => '27–35',
+                'dundalk_baltimore_md' => '27–35',
+                'newark_nj'            => '29–37',
+                'philadelphia_pa'      => '29–37',
+                'wilmington_de'        => '29–37',
+                'providence_ri'        => '30–38',
+                'savannah_ga'          => '31–39',
+                'jacksonville_fl'      => '27–35',
+                'miami_fl'             => '27–35',
+                'freeport_tx'          => '29–37',
             ],
             'base_rates'   => [
                 'hatchback'      => [1450, 1600, 1800],

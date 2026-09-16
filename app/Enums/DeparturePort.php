@@ -4,30 +4,30 @@ namespace App\Enums;
 
 enum DeparturePort: string
 {
-    case BaltimoreMD    = 'baltimore_md';
-    case NewarkNJ       = 'newark_nj';
-    case HoustonTX      = 'houston_tx';
-    case SavannahGA     = 'savannah_ga';
-    case JacksonvilleFL = 'jacksonville_fl';
-    case MiamiFL        = 'miami_fl';
-    case CharlestonSC   = 'charleston_sc';
-    case LosAngelesCA   = 'los_angeles_ca';
-    case NorfolkVA      = 'norfolk_va';
-    case PortArthurTX   = 'port_arthur_tx';
+    case BaltimoreMD        = 'baltimore_md';
+    case DundalkBaltimoreMD = 'dundalk_baltimore_md';
+    case NewarkNJ           = 'newark_nj';
+    case PhiladelphiaPA     = 'philadelphia_pa';
+    case WilmingtonDE       = 'wilmington_de';
+    case ProvidenceRI       = 'providence_ri';
+    case SavannahGA         = 'savannah_ga';
+    case JacksonvilleFL     = 'jacksonville_fl';
+    case MiamiFL            = 'miami_fl';
+    case FreeportTX         = 'freeport_tx';
 
     public function label(): string
     {
         return match ($this) {
-            self::BaltimoreMD    => 'Port of Baltimore, MD',
-            self::NewarkNJ       => 'Port of Newark / New York, NJ',
-            self::HoustonTX      => 'Port of Houston (Barbours Cut), TX',
-            self::SavannahGA     => 'Port of Savannah, GA',
-            self::JacksonvilleFL => 'Port of Jacksonville (JAXPORT), FL',
-            self::MiamiFL        => 'Port of Miami, FL',
-            self::CharlestonSC   => 'Port of Charleston, SC',
-            self::LosAngelesCA   => 'Port of Los Angeles / Long Beach, CA',
-            self::NorfolkVA      => 'Port of Norfolk (Virginia International), VA',
-            self::PortArthurTX   => 'Port of Port Arthur / Orange, TX',
+            self::BaltimoreMD        => 'Port of Baltimore, MD',
+            self::DundalkBaltimoreMD => 'Dundalk Marine Terminal, Baltimore, MD',
+            self::NewarkNJ           => 'Port of Newark / New York, NJ',
+            self::PhiladelphiaPA     => 'Port of Philadelphia, PA',
+            self::WilmingtonDE       => 'Port of Wilmington, DE',
+            self::ProvidenceRI       => 'Port of Providence, RI',
+            self::SavannahGA         => 'Port of Savannah, GA',
+            self::JacksonvilleFL     => 'Port of Jacksonville (JAXPORT), FL',
+            self::MiamiFL            => 'Port of Miami, FL',
+            self::FreeportTX         => 'Port Freeport, TX',
         };
     }
 

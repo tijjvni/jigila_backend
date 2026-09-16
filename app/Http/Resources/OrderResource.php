@@ -41,6 +41,13 @@ class OrderResource extends JsonResource
             'eta_start'                => $this->eta_start?->toDateString(),
             'eta_end'                  => $this->eta_end?->toDateString(),
 
+            // Condition the export port authority confirmed on arrival. Kept
+            // apart from `condition` so a downgrade (runner sold with no fuel
+            // or flat tyres) is visible against what was originally booked.
+            'port_condition'              => $this->port_condition,
+            'port_condition_confirmed_at' => $this->port_condition_confirmed_at?->toDateString(),
+            'port_condition_note'         => $this->port_condition_note,
+
             // Cancellation (BUG-032 / BUG-064)
             'cancelled_at'        => $this->cancelled_at,
             'cancellation_reason' => $this->cancellation_reason,
@@ -59,6 +66,28 @@ class OrderResource extends JsonResource
                     ($log->new_values['status'] ?? null) === 'on_vessel'
                 )?->created_at
             ),
+
+            // When each status was actually reached, so the customer tracking
+            // timeline can date-stamp every completed point (BUG-095).
+            // Keyed by status; `pending` falls back to order creation because
+            // the opening status is never written as a transition.
+            'status_timestamps' => $this->whenLoaded('auditLogs', function () {
+                $stamps = ['pending' => $this->created_at?->toIso8601String()];
+
+                foreach ($this->auditLogs->sortBy('created_at') as $log) {
+                    if ($log->action !== 'status_changed') {
+                        continue;
+                    }
+                    $status = $log->new_values['status'] ?? null;
+                    // First arrival wins — a status re-entered after a
+                    // correction keeps the date the customer first saw.
+                    if ($status && !isset($stamps[$status])) {
+                        $stamps[$status] = $log->created_at?->toIso8601String();
+                    }
+                }
+
+                return $stamps;
+            }),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];

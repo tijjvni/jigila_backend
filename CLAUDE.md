@@ -70,8 +70,11 @@ The `CheckRole` middleware (`app/Http/Middleware/CheckRole.php`) enforces role-b
 - `orders`: id, user_id (FK cascade delete), vin, stock_id, auction_source, condition, already_purchased (bool), bid_price, vehicle_stock_no, buyer_no, buyer_code, services (JSON array), status (enum), pickup_location, departure_port, destination_port
 - `invoices`: id, user_id, order_id, invoice_number (display only), payment_reference (Paystack UUID), payment_url, status (pending/paid/cancelled), paid_at
 - Order `services` field is cast to array; `status` is an enum; `already_purchased` differentiates bid-only vs full-purchase orders
-- Departure ports: `houston_tx`, `baltimore_md`, `newark_nj`, `savannah_ga`, `los_angeles_ca`
+- Departure ports (`App\Enums\DeparturePort`, 10): `baltimore_md`, `dundalk_baltimore_md`, `newark_nj`, `philadelphia_pa`, `wilmington_de`, `providence_ri`, `savannah_ga`, `jacksonville_fl`, `miami_fl`, `freeport_tx`
 - Destination ports: `tin_can_lagos`, `lagos_apapa`, `tema_ghana`
+- **`config/freight.php` key order is load-bearing**: `ConfigController` zips `departure_ports` positionally against each `trucking_sedan_rates` row, and every destination port's `transit_days` map must use the same keys in the same order. Changing the port set means updating the enum, all three config arrays, and `STATE_SUGGESTED_PORT` in the frontend's `src/lib/freight.ts` together.
+- `orders.port_condition` records the condition the **export port authority** confirmed on inspection; `orders.condition` stays as booked. A vehicle sold as a runner is regularly downgraded at the port, and the difference between the two `condition_disclosures` fees is billable.
+- `config/freight.php` `charges` holds the platform fees (Jigila flat rate, auction account handling, FX offshore). A `percent` charge with `basis: 'total'` resolves after the flat fees and any departure-port `surcharge`.
 
 ## Authorization Conventions
 
