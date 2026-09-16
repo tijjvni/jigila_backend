@@ -70,12 +70,12 @@ class UpdateOrderLocationTest extends TestCase
 
         $this->actingAs($admin)
             ->patchJson("/api/v1/admin/orders/{$order->id}/location", [
-                'departure_port' => DeparturePort::HoustonTX->value,
+                'departure_port' => DeparturePort::FreeportTX->value,
             ])->assertStatus(200);
 
         $this->assertDatabaseHas('orders', [
             'id'             => $order->id,
-            'departure_port' => DeparturePort::HoustonTX->value,
+            'departure_port' => DeparturePort::FreeportTX->value,
         ]);
     }
 

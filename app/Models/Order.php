@@ -84,6 +84,11 @@ class Order extends Model
         'port_received_at',
         'eta_start',
         'eta_end',
+        // Condition the export port authority actually confirmed, which can
+        // differ from the `condition` the vehicle was booked under.
+        'port_condition',
+        'port_condition_confirmed_at',
+        'port_condition_note',
     ];
 
     protected function casts(): array
@@ -101,6 +106,9 @@ class Order extends Model
             'eta_start'         => 'date',
             'eta_end'           => 'date',
             'cancelled_at'      => 'datetime',
+
+            'port_condition'              => VehicleCondition::class,
+            'port_condition_confirmed_at' => 'datetime',
         ];
     }
 

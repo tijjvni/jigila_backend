@@ -67,6 +67,13 @@ class ConfigController extends Controller
             'condition_disclosures' => $freightPorts['condition_disclosures'],
             'large_vehicle_types'   => $freightPorts['large_vehicle_types'],
 
+            // Platform fees (Jigila flat rate, auction account handling, FX offshore).
+            // Driven from config so a fee change never needs a portal rebuild.
+            'charges' => $freightPorts['charges'],
+
+            // Which condition downgrades the port authority can bill for.
+            'condition_reclassification' => $freightPorts['condition_reclassification'],
+
             // Cancellation copy is driven by the same value the API enforces,
             // so the policy shown and the policy applied cannot drift (BUG-064).
             'cancellation_policy' => [

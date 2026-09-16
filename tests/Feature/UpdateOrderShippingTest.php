@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\ShippingLine;
 use App\Enums\ShippingType;
+use App\Enums\VehicleCondition;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -201,5 +202,88 @@ class UpdateOrderShippingTest extends TestCase
                 ->patchJson($this->endpoint($order), ['shipping_line' => $line])
                 ->assertStatus(200, "Expected 200 for shipping_line={$line}");
         }
+    }
+
+    // ─── Port-authority condition ─────────────────────────────────────────────
+
+    public function test_admin_can_record_the_port_authority_condition(): void
+    {
+        $admin = $this->adminUser();
+        $order = $this->order(['condition' => VehicleCondition::RunAndDrive->value]);
+
+        $this->actingAs($admin)
+            ->patchJson($this->endpoint($order), [
+                'port_condition'              => VehicleCondition::NonRunner->value,
+                'port_condition_confirmed_at' => '2026-07-05',
+                'port_condition_note'         => 'No fuel, two flat tyres',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('data.port_condition', VehicleCondition::NonRunner->value)
+            ->assertJsonPath('data.port_condition_confirmed_at', '2026-07-05')
+            ->assertJsonPath('data.port_condition_note', 'No fuel, two flat tyres');
+
+        $this->assertDatabaseHas('orders', [
+            'id'                  => $order->id,
+            'port_condition'      => VehicleCondition::NonRunner->value,
+            'port_condition_note' => 'No fuel, two flat tyres',
+        ]);
+    }
+
+    public function test_recording_the_port_condition_leaves_the_booked_condition_intact(): void
+    {
+        $admin = $this->adminUser();
+        $order = $this->order(['condition' => VehicleCondition::RunAndDrive->value]);
+
+        $this->actingAs($admin)
+            ->patchJson($this->endpoint($order), [
+                'port_condition'              => VehicleCondition::Forklift->value,
+                'port_condition_confirmed_at' => '2026-07-05',
+            ])
+            ->assertStatus(200)
+            // The vehicle was sold as a runner; that declaration must survive
+            // the downgrade so the two can be compared and the difference billed.
+            ->assertJsonPath('data.condition', VehicleCondition::RunAndDrive->value)
+            ->assertJsonPath('data.port_condition', VehicleCondition::Forklift->value);
+
+        $this->assertDatabaseHas('orders', [
+            'id'             => $order->id,
+            'condition'      => VehicleCondition::RunAndDrive->value,
+            'port_condition' => VehicleCondition::Forklift->value,
+        ]);
+    }
+
+    public function test_invalid_port_condition_is_rejected(): void
+    {
+        $admin = $this->adminUser();
+        $order = $this->order();
+
+        $this->actingAs($admin)
+            ->patchJson($this->endpoint($order), ['port_condition' => 'written_off'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['port_condition']);
+    }
+
+    public function test_every_vehicle_condition_is_accepted_as_a_port_condition(): void
+    {
+        $admin = $this->adminUser();
+
+        foreach (VehicleCondition::values() as $condition) {
+            $order = $this->order();
+            $this->actingAs($admin)
+                ->patchJson($this->endpoint($order), ['port_condition' => $condition])
+                ->assertStatus(200, "Expected 200 for port_condition={$condition}");
+        }
+    }
+
+    public function test_port_condition_is_null_until_the_port_reports(): void
+    {
+        $admin = $this->adminUser();
+        $order = $this->order();
+
+        $this->actingAs($admin)
+            ->patchJson($this->endpoint($order), ['vessel_name' => 'MV Grande Lagos'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.port_condition', null)
+            ->assertJsonPath('data.port_condition_confirmed_at', null);
     }
 }
