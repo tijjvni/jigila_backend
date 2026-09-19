@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReleaseShipmentHoldRequest;
 use App\Http\Requests\Admin\UpdateOrderBidRequest;
 use App\Http\Requests\Admin\UpdateOrderLocationRequest;
 use App\Http\Requests\Admin\UpdateOrderShippingRequest;
@@ -13,6 +14,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\Admin\OrderService;
 use App\Services\OrderService as CustomerOrderService;
+use App\Services\PaymentDeadlineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +25,7 @@ class OrderController extends Controller
         // Cancellation rules are identical for both sides of the app — only the
         // milestone lock differs, and that is decided by the actor's role.
         private CustomerOrderService $customerOrders,
+        private PaymentDeadlineService $deadlines,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -70,6 +73,18 @@ class OrderController extends Controller
         $cancelled = $this->customerOrders->cancel($order, $request->user(), $request->validated('reason'));
 
         return $this->okResponse(new OrderResource($cancelled));
+    }
+
+    /**
+     * Lift a payment hold by hand (spec 4) — a bank transfer that cleared
+     * outside Paystack, a goodwill release, or a hold placed in error. The
+     * order returns to the stage it was at when the hold went on.
+     */
+    public function releaseHold(ReleaseShipmentHoldRequest $request, Order $order): JsonResponse
+    {
+        $released = $this->deadlines->releaseHoldForOrder($order, $request->user(), $request->validated('reason'));
+
+        return $this->okResponse(new OrderResource($released));
     }
 
     public function auditLog(Order $order): JsonResponse

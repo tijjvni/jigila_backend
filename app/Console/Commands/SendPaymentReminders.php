@@ -3,50 +3,48 @@
 namespace App\Console\Commands;
 
 use App\Models\Invoice;
-use App\Services\NotificationService;
+use App\Services\PaymentDeadlineService;
 use Illuminate\Console\Command;
 
 /**
- * Hour-based payment reminders for outstanding invoices (BUG-033).
+ * Deadline-anchored payment reminders (spec 4).
  *
- * Safe to run as often as the scheduler likes: `dueForReminder()` only returns
- * invoices whose last reminder is at least one full interval old, and the
- * counter is bumped in the same pass, so a double run never double-sends.
+ * Reminders fire at fixed points relative to the invoice's own deadline —
+ * 48 hours before, 24 before, 6 before and at expiry — rather than on a rolling
+ * interval. Each stage is recorded in `reminder_stages_sent` as it goes out, so
+ * the command is safe to run at any frequency: running it twice in a minute
+ * sends nothing the second time, and a scheduler outage produces a late notice
+ * rather than a duplicate one.
  */
 class SendPaymentReminders extends Command
 {
     protected $signature = 'jigila:send-payment-reminders {--dry-run : List what would be sent without sending}';
 
-    protected $description = 'Send reminders for invoices that are still unpaid';
+    protected $description = 'Send deadline reminders for invoices that are still unpaid';
 
-    public function handle(NotificationService $notifications): int
+    public function handle(PaymentDeadlineService $deadlines): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $sent   = 0;
 
-        Invoice::dueForReminder()
+        Invoice::dueForStageReminder()
             ->with('user')
-            ->chunkById(100, function ($invoices) use ($notifications, $dryRun, &$sent) {
+            ->chunkById(100, function ($invoices) use ($deadlines, $dryRun, &$sent) {
                 foreach ($invoices as $invoice) {
                     if (!$invoice->user) {
                         continue;
                     }
 
                     if ($dryRun) {
-                        $this->line("Would remind {$invoice->user->email} about {$invoice->invoice_number}");
-                        $sent++;
+                        foreach ($deadlines->pendingStages($invoice)['due'] as $stage) {
+                            $this->line("Would remind {$invoice->user->email} about {$invoice->invoice_number} (stage: {$stage})");
+                            $sent++;
+                        }
 
                         continue;
                     }
 
-                    $notifications->sendPaymentReminder($invoice);
-
-                    $invoice->forceFill([
-                        'last_reminded_at' => now(),
-                        'reminder_count'   => $invoice->reminder_count + 1,
-                    ])->save();
-
-                    $sent++;
+                    $sent += count($deadlines->sendDueReminders($invoice));
                 }
             });
 

@@ -16,7 +16,11 @@ class UpdateOrderStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(OrderStatus::values())],
+            // `assignableValues()`, not `values()`: `payment_overdue` is set
+            // by the deadline sweep together with the shipment hold and is
+            // cleared by payment, an approved extension or an explicit
+            // release — never by setting the status directly (spec 4).
+            'status' => ['required', Rule::in(OrderStatus::assignableValues())],
         ];
     }
 }

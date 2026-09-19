@@ -326,11 +326,17 @@ inside a transaction with a row lock so concurrent creates cannot collide.
 ## Testing
 
 ```bash
-composer test                        # 329 tests, 827 assertions, ~11s
+composer check                       # lint + tests + audit — what CI runs
+composer test                        # 329 tests, 827 assertions, ~13s
+composer lint                        # Pint, check only
+composer fix                         # Pint, apply
 php artisan test --filter=OrderControllerTest
 php artisan test --group=benchmark   # performance harnesses — prints timings
-./vendor/bin/pint --test             # style check, run separately
 ```
+
+CI (`.github/workflows/ci.yml`) runs style, tests and `composer audit` as separate jobs.
+Pint and the suite stay in separate processes — together they have been observed to
+exhaust memory.
 
 The suite runs on in-memory SQLite with mail captured to an array and the queue set to
 `sync` — no setup required. Benchmarks use the `#[Group('benchmark')]` attribute and are

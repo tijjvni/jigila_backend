@@ -24,6 +24,14 @@ class OrderResource extends JsonResource
             'buyer_code'        => $this->buyer_code,
             'services'          => $this->services,
             'status'            => $this->status,
+            // While a payment hold is on, `status` reads `payment_overdue`.
+            // `effective_status` is the pipeline stage underneath it, so the
+            // tracking timeline keeps showing how far the shipment actually
+            // got rather than collapsing to the hold (spec 4).
+            'effective_status'  => $this->effectiveStatus(),
+            'shipment_hold'        => (bool) $this->shipment_hold,
+            'shipment_hold_reason' => $this->shipment_hold_reason,
+            'shipment_held_at'     => $this->shipment_held_at,
             'pickup_location'   => $this->pickup_location,
             'departure_port'    => $this->departure_port,
             'destination_port'  => $this->destination_port,

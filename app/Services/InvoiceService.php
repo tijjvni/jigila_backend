@@ -18,8 +18,15 @@ class InvoiceService
     public function __construct(
         private PaystackService $paystack,
         private NotificationService $notifications,
+        private PaymentDeadlineService $deadlines,
+        private LateFeeService $lateFees,
     ) {}
 
+    /**
+     * @param  int|null  $deadlineHours  Payment window for this invoice; falls
+     *                                   back to the configured default. Set per
+     *                                   order by the admin raising the invoice.
+     */
     public function create(
         User $user,
         ?Order $order,
@@ -28,6 +35,7 @@ class InvoiceService
         float $amount,
         array $metadata = [],
         ?User $actor = null,
+        ?int $deadlineHours = null,
     ): Invoice {
         $paymentUrl       = null;
         $paymentReference = null;
@@ -82,7 +90,13 @@ class InvoiceService
             ]);
         }
 
-        $invoice = DB::transaction(function () use ($user, $order, $type, $description, $amount, $metadata, $paymentUrl, $paymentReference) {
+        // The payment clock starts at issuance (spec 4). Terms are frozen onto
+        // the invoice so a later change to the fee schedule cannot re-price it.
+        $hours   = $deadlineHours ?? $this->deadlines->defaultDeadlineHours();
+        $dueAt   = now()->addHours($hours);
+        $feeTerms = $this->lateFees->termsAtIssuance();
+
+        $invoice = DB::transaction(function () use ($user, $order, $type, $description, $amount, $metadata, $paymentUrl, $paymentReference, $hours, $dueAt, $feeTerms) {
             $last          = Invoice::lockForUpdate()->max('id') ?? 0;
             $invoiceNumber = 'INV-' . str_pad($last + 1, 6, '0', STR_PAD_LEFT);
 
@@ -97,6 +111,14 @@ class InvoiceService
                 'payment_reference'  => $paymentReference,
                 'payment_url'        => $paymentUrl,
                 'metadata'           => !empty($metadata) ? $metadata : null,
+                'payment_due_at'     => $dueAt,
+                'deadline_hours'     => $hours,
+                // `due_date` is the date part of the same deadline, kept in
+                // step because the invoice email and the admin invoice panel
+                // both still read it.
+                'due_date'           => $dueAt->toDateString(),
+                'late_fee_mode'      => $feeTerms['mode'],
+                'late_fee_rate'      => $feeTerms['rate'],
             ]);
         });
 
@@ -184,5 +206,54 @@ class InvoiceService
                 ],
             ]);
         }
+
+        // Payment lifts any shipment hold this invoice was responsible for and
+        // stops late-fee accrual — the accrual scopes all require `pending`, so
+        // whatever fee had built up is now the final figure (spec 4).
+        $this->deadlines->releaseHold($invoice, 'payment_received');
+    }
+
+    /**
+     * Bill the late fee accrued on an overdue invoice as its own invoice.
+     *
+     * A late fee cannot ride the parent's Paystack link — that transaction was
+     * initialised for a fixed amount at issuance — so settling one means
+     * raising a `late_fee` invoice with its own payment link. Guarded against
+     * double-billing: one open late-fee invoice per parent at a time.
+     */
+    public function issueLateFee(Invoice $parent, User $actor): Invoice
+    {
+        if ((float) $parent->late_fee_amount <= 0) {
+            abort(422, 'No late fee has accrued on this invoice.');
+        }
+
+        if ($this->lateFees->hasOpenLateFeeInvoice($parent)) {
+            abort(422, 'A late fee invoice is already outstanding for this invoice.');
+        }
+
+        $parent->loadMissing(['user', 'order']);
+
+        $days    = $parent->late_fee_days;
+        $dayWord = $days === 1 ? 'day' : 'days';
+
+        $invoice = $this->create(
+            user: $parent->user,
+            order: $parent->order,
+            type: InvoiceType::LateFee,
+            description: "Late payment fee — {$parent->invoice_number} ({$days} {$dayWord} overdue)",
+            amount: (float) $parent->late_fee_amount,
+            metadata: [
+                'late_fee_for_invoice_id'     => $parent->id,
+                'late_fee_for_invoice_number' => $parent->invoice_number,
+                'late_fee_days'               => $days,
+                'late_fee_mode'               => $parent->late_fee_mode,
+                'late_fee_rate'               => $parent->late_fee_rate,
+            ],
+            actor: $actor,
+        );
+
+        $parent->forceFill(['late_fee_invoiced_at' => now()])->save();
+
+        return $invoice;
     }
 }

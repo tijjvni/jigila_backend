@@ -35,6 +35,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $departure_port
  * @property string|null $destination_port
  * @property OrderStatus $status
+ * @property string|null $status_before_hold
+ * @property bool $shipment_hold
+ * @property string|null $shipment_hold_reason
+ * @property Carbon|null $shipment_held_at
  * @property string|null $bid_status
  * @property string|null $out_bid_price
  * @property string|null $vessel_name
@@ -89,6 +93,12 @@ class Order extends Model
         'port_condition',
         'port_condition_confirmed_at',
         'port_condition_note',
+        // Shipment hold — written only by PaymentDeadlineService, never by a
+        // Form Request. Listed here so the service can mass-assign them.
+        'status_before_hold',
+        'shipment_hold',
+        'shipment_hold_reason',
+        'shipment_held_at',
     ];
 
     protected function casts(): array
@@ -106,6 +116,8 @@ class Order extends Model
             'eta_start'         => 'date',
             'eta_end'           => 'date',
             'cancelled_at'      => 'datetime',
+            'shipment_hold'     => 'boolean',
+            'shipment_held_at'  => 'datetime',
 
             'port_condition'              => VehicleCondition::class,
             'port_condition_confirmed_at' => 'datetime',
@@ -122,12 +134,30 @@ class Order extends Model
     }
 
     /**
+     * The pipeline stage the order is really at.
+     *
+     * While a shipment hold is in force `status` reads `payment_overdue`, which
+     * says nothing about how far the shipment has actually got. Every policy
+     * question — can this be cancelled, has it passed a milestone — has to be
+     * answered against the stashed stage, or a hold would silently change the
+     * answer (spec 4).
+     */
+    public function effectiveStatus(): OrderStatus
+    {
+        if ($this->status === OrderStatus::PaymentOverdue && $this->status_before_hold) {
+            return OrderStatus::tryFrom($this->status_before_hold) ?? OrderStatus::Processing;
+        }
+
+        return $this->status;
+    }
+
+    /**
      * Once Jigila has committed money or moved the vehicle, the customer can no
      * longer self-cancel — they have to raise a support ticket instead.
      */
     public function passedOperationalMilestone(): bool
     {
-        return !in_array($this->status, [OrderStatus::Pending, OrderStatus::Processing], true);
+        return !in_array($this->effectiveStatus(), [OrderStatus::Pending, OrderStatus::Processing], true);
     }
 
     public function user(): BelongsTo

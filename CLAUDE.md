@@ -28,21 +28,35 @@ Seeded accounts: `admin@jigila.com` / `password` (admin) and `user@jigila.com` /
 role holding every `Permission` case.
 
 ```bash
-composer run dev     # server + queue listener + Pail log viewer + Vite, concurrently
-composer run test    # config:clear then the full suite
+composer dev      # server + queue listener + Pail log viewer + Vite, concurrently
+composer check    # lint + tests + dependency audit — what CI runs
+composer test     # config:clear then the full suite
+composer lint     # Pint, check only
+composer fix      # Pint, apply
 php artisan test --filter=OrderControllerTest
 php artisan test --filter=OrderControllerTest::test_user_can_create_order
 php artisan test --group=benchmark   # performance harnesses — prints timings
-./vendor/bin/pint --test             # style check
 ```
+
+**Run `composer check` before pushing** — it is exactly what CI runs.
+
+Pint and the test suite are separate invocations inside `check`, and separate jobs in CI,
+because in one process they have been observed to exhaust memory. `check` also does not
+delegate to `@test`: Composer only substitutes `@no_additional_args` for a directly-invoked
+script, so chaining it passes the literal token through to `config:clear` and fails.
 
 Tests run on in-memory SQLite (`phpunit.xml` sets `DB_DATABASE=:memory:`) — no database
 setup needed. Mail is `array`, queue is `sync`, cache is `array` under test.
 
 **Run Pint separately from the test suite** — together they can exhaust memory.
 
-PHPStan is **not** installed, and there is no CI workflow in this repository. Pint and the
-test suite are the only automated checks, and both are run manually.
+CI (`.github/workflows/ci.yml`) runs style, tests and `composer audit` as three jobs on
+pushes and PRs to `main` and `local-development`.
+
+PHPStan is **not** installed — Pint, the test suite and the dependency audit are the only
+automated checks. Adding static analysis is the obvious next gap to close.
+
+`DEPLOYMENT.md` holds the release runbook and the pre-flight checklist.
 
 ## Architecture
 
@@ -100,7 +114,8 @@ An idle token still expires; an actively used one does not log the user out mid-
 `POST orders/{order}/cancel` · `GET orders/{order}/documents` ·
 `GET orders/{order}/documents/{document}/download` · `GET invoices` ·
 `GET invoices/{invoice}` · `POST invoices/{invoice}/refund-request` ·
-`GET notifications` · `PATCH notifications/read-all` ·
+`POST invoices/{invoice}/extension-request` · `GET notifications` ·
+`PATCH notifications/read-all` ·
 `PATCH notifications/{notification}/read` · `GET|POST tickets` · `GET tickets/{ticket}` ·
 `POST tickets/{ticket}/messages`
 
@@ -113,7 +128,9 @@ An idle token still expires; an actively used one does not log the user out mid-
 `PATCH orders/{order}/status|bid|location|shipping` · `POST orders/{order}/cancel` ·
 `POST|DELETE orders/{order}/documents[/{document}]` · `GET invoices` ·
 `GET invoices/{invoice}` · `POST orders/{order}/invoices` ·
-`PATCH invoices/{invoice}/refund` · `GET|POST users` · `GET|PUT|DELETE users/{user}` ·
+`PATCH invoices/{invoice}/refund` · `PATCH invoices/{invoice}/deadline` ·
+`PATCH invoices/{invoice}/extension` · `POST invoices/{invoice}/late-fee-invoice` ·
+`POST orders/{order}/release-hold` · `GET|POST users` · `GET|PUT|DELETE users/{user}` ·
 `PATCH users/{user}/archive|activate` · `POST users/{user}/reset-password` ·
 `apiResource roles` · `POST roles/assign` · `POST|DELETE roles/{role}/users/{user}` ·
 `GET tickets` · `GET tickets/{ticket}` · `POST tickets/{ticket}/messages` ·
@@ -174,36 +191,58 @@ a user cuts off their existing tokens without revoking them.
   `departure_port`, `destination_port`, plus admin-only shipping fields (`vessel_name`,
   `container_number`, `shipping_tracking_number`, `shipping_line`, `shipping_type`,
   `current_vessel_location`, `port_received_at`, `eta_start`, `eta_end`), cancellation
-  fields (`cancelled_at`, `cancellation_reason`), and port-authority condition
-  (`port_condition`, `port_condition_confirmed_at`, `port_condition_note`). Soft-deleted.
+  fields (`cancelled_at`, `cancellation_reason`), port-authority condition
+  (`port_condition`, `port_condition_confirmed_at`, `port_condition_note`) and shipment
+  hold (`status_before_hold`, `shipment_hold`, `shipment_hold_reason`, `shipment_held_at`).
+  Soft-deleted.
 - **`invoices`** — `user_id`, `order_id`, `invoice_number` (display only),
   `type`, `description`, `amount` (decimal:2), `status` (`pending|paid|cancelled`),
   `due_date`, `paid_at`, `payment_reference` (Paystack UUID), `payment_url`, `metadata`
-  (JSON), reminder fields (`last_reminded_at`, `reminder_count`) and refund fields
-  (`refund_status`, `refund_amount`, `refund_reason`, `refund_requested_at`,
-  `refund_processed_at`, `refund_processed_by`). Soft-deleted, prunable after 90 days.
+  (JSON), reminder fields (`last_reminded_at`, `reminder_count`, `reminder_stages_sent`),
+  refund fields (`refund_status`, `refund_amount`, `refund_reason`, `refund_requested_at`,
+  `refund_processed_at`, `refund_processed_by`), deadline fields (`payment_due_at`,
+  `deadline_hours`, `overdue_at`), late-fee fields (`late_fee_mode`, `late_fee_rate`,
+  `late_fee_amount`, `late_fee_days`, `late_fee_accrued_at`, `late_fee_invoiced_at`) and
+  extension fields (`extension_status`, `extension_requested_hours`,
+  `extension_granted_hours`, `extension_reason`, `extension_requested_at`,
+  `extension_reviewed_at`, `extension_reviewed_by`, `original_payment_due_at`).
+  Soft-deleted, prunable after 90 days.
 - **`order_documents`** — shipping paperwork on the **private `local` disk**.
 - **`order_audit_logs`** — `order_id`, `user_id`, `action`, `old_values`, `new_values`.
 - **`tickets`** / **`ticket_messages`** — support threads; messages carry attachments.
 - **`notifications`** — in-app feed; `read` is derived from `read_at !== null`.
 - **`roles`** / **`role_user`** — named roles with a `permissions` JSON array.
 - **`settings`** — flat key/value, cached a day via `Setting::get()`/`set()`.
-  `exchange_rate` (NGN per USD) lives here and gates invoice creation.
+  `exchange_rate` (NGN per USD) lives here and gates invoice creation. The payment
+  deadline and late-fee schedule are overridable here too (`payment_deadline_hours`,
+  `deadline_extension_max_hours`, `late_fee_mode`, `late_fee_flat_amount`,
+  `late_fee_percent`, `late_fee_grace_hours`, `late_fee_max_days`, `late_fee_cap_percent`),
+  each falling through to its `config/orders.php` default when unset.
 
-`due_date` is a **`date`** column (day granularity) and is currently **never written** by
-any code path — only read by `InvoiceResource`. Any hour-precision payment deadline work
-needs a migration to `datetime` first.
+`due_date` is a **`date`** column (day granularity). The hour-precision deadline lives in
+**`payment_due_at`** (timestamp); `due_date` is written alongside it as the date part,
+because the invoice email and the admin invoice panel both still read it. Write both or
+they drift.
 
 ## Order Lifecycle
 
-`OrderStatus` has 8 cases, in sequence:
+`OrderStatus` has 9 cases — 8 in sequence plus one off-pipeline:
 
 ```
 pending → processing → pickup → in_transit → at_port → on_vessel → delivered
                                                               ↘ cancelled (any stage)
+                                                              ↘ payment_overdue (any stage, reversible)
 ```
 
 `in_transit` is inland US trucking to the export port; `on_vessel` is ocean freight.
+
+**`payment_overdue` is system-owned and is not a pipeline stage.** The deadline sweep
+writes it together with `shipment_hold`, stashing the real stage in `status_before_hold`;
+payment, an approved extension or an explicit release restores it. It is excluded from
+`OrderStatus::assignableValues()`, so `PATCH admin/orders/{order}/status` rejects it —
+admins lift a hold via `POST admin/orders/{order}/release-hold`. Any policy question
+(can this be cancelled, has it passed a milestone) must read `Order::effectiveStatus()`,
+never `status`, or a hold silently changes the answer.
 
 **Adding a status means updating all six of these:**
 1. `app/Enums/OrderStatus.php`
@@ -213,23 +252,28 @@ pending → processing → pickup → in_transit → at_port → on_vessel → d
 5. `src/domains/admin_portal/orders/components/tracking-status-section.component.tsx`
 6. `src/domains/user_portal/orders/pages/order-detail.page.tsx`
 
+`payment_overdue` is deliberately absent from (5): it is not admin-assignable, so listing
+it in a stage array would offer a dropdown option the API then rejects.
+
 Status transitions are admin-only via `PATCH admin/orders/{order}/status`. The customer
 `PUT orders/{order}` route ignores `status` entirely.
 
 ## Enums
 
-15 in `app/Enums/`:
+17 in `app/Enums/`:
 
 | Enum | Values |
 |---|---|
-| `OrderStatus` | 8, above |
+| `OrderStatus` | 9, above |
 | `AuctionSource` | `Copart`, `IAAI` — **not** `Co-parts` |
 | `VehicleCondition` | `Run and Drive`, `Non-Runner`, `Forklift` |
 | `VehicleType` | `hatchback`, `sedan`, `coupe`, `mid_suv`, `full_suv`, `lux_suv`, `minivan`, `pickup_std`, `pickup_full`, `commercial_van` |
 | `ServiceType` | `trucking`, `shipping` |
 | `BidStatus` | `pending`, `won`, `lost`, `out_bid` |
-| `InvoiceType` | `bid`, `service`, `bid_deposit`, `bid_balance` |
+| `InvoiceType` | `bid`, `service`, `bid_deposit`, `bid_balance`, `late_fee` |
 | `RefundStatus` | `requested`, `approved`, `processed`, `rejected` |
+| `DeadlineExtensionStatus` | `requested`, `approved`, `rejected` |
+| `LateFeeMode` | `none`, `flat`, `percent` |
 | `TicketStatus` | `open`, `in_progress`, `resolved`, `closed` — there is no `processing` |
 | `DocumentType` | `bill_of_lading`, `invoice`, `export_title`, `dock_receipt`, `vehicle_release_form`, `shipping_receipt`, `auction_purchase_receipt`, `other` |
 | `ShippingLine` | `sallaum`, `grimaldi`, `maersk`, `cma_cgm` |
@@ -337,16 +381,51 @@ Dispatch points: welcome, invoice created, payment reminder, document uploaded, 
 cancelled, shipping updated, refund status, ticket created/replied.
 `notifyAdmins()` fans out to all admins via `chunkById`.
 
-**Payment reminders** (`jigila:send-payment-reminders`, scheduled hourly with
-`withoutOverlapping()` in `routes/console.php`):
-`Invoice::scopeDueForReminder()` returns pending invoices whose last reminder is at least
-`orders.payment_reminder_interval_hours` (24) old, capped at `payment_reminder_max` (5).
-For an invoice never reminded, the clock starts at `created_at`, so nobody is nagged
-seconds after an invoice is raised. The command bumps `last_reminded_at` and
-`reminder_count` in the same pass, so **a double run never double-sends**.
+**Payment deadlines** (spec 4). Two commands, both scheduled
+`everyFifteenMinutes()->withoutOverlapping()` in `routes/console.php`:
 
-Note `sendPaymentReminder()` currently reuses `InvoiceCreatedMail` — there is no dedicated
-reminder template.
+| Command | Does |
+|---|---|
+| `jigila:send-payment-reminders` | Fires the reminder stages due for each unpaid invoice |
+| `jigila:process-payment-deadlines` | Marks lapsed invoices overdue + holds the shipment, then accrues late fees |
+
+Reminders are **anchored to the invoice's own deadline**, not a rolling interval:
+`config('orders.payment_reminder_offsets_hours')` is `[48, 24, 6, 0]` — hours before
+`payment_due_at`, where `0` means at expiry. Each stage is recorded in
+`invoices.reminder_stages_sent` as it goes out, so **a double run never double-sends** and
+a scheduler outage produces a late notice rather than a duplicate. A stage whose trigger
+time falls at or before `created_at` is *consumed unsent* — on a 24-hour deadline, "48
+hours left" was never true, and "24 hours left" would land beside the invoice email.
+Approving an extension clears the column so the new deadline re-arms every stage.
+
+Fifteen minutes, not hourly: the expiry notice and the hold that follows are anchored to an
+exact deadline on an invoice that is accruing a fee, and an hourly sweep lands them up to
+59 minutes late.
+
+**Late fees** accrue in `LateFeeService`. Two rules keep it safe on a scheduler:
+accrual **recomputes `f(days_overdue)` from scratch** rather than incrementing (so a
+re-run, or a week-long catch-up, lands on the same number), and the mode/rate are **frozen
+onto the invoice at issuance** (`late_fee_mode`, `late_fee_rate`) so changing the schedule
+in settings never re-prices an invoice already issued. A day counts as "a day or part
+thereof"; the diff is truncated to whole minutes first, because Carbon's microsecond
+precision would otherwise charge an extra day at an exact boundary. Both caps apply:
+`max_days` and `cap_percent` of the invoice.
+
+A fee is **billed as its own `late_fee` invoice** (`POST admin/invoices/{id}/late-fee-invoice`),
+never added to the parent — the parent's Paystack transaction was initialised for a fixed
+amount at issuance, so a growing fee has nowhere to go on that link.
+
+**Deadline extensions** are one-time per invoice. The customer requests
+(`POST invoices/{id}/extension-request`), an admin approves or declines
+(`PATCH admin/invoices/{id}/extension`). Approving moves `payment_due_at` forward from
+whichever is later, the old deadline or now, lifts any hold, and **freezes** late fees
+already accrued — the extension forgives further accrual, not the days already late. Pass
+`waive_accrued_fees` to clear them too. Transitions live in
+`PaymentDeadlineService::ALLOWED`; a declined request may be replaced, an approved one is
+final.
+
+Note `sendPaymentDeadlineReminder()` and `notifyPaymentOverdue()` use `PaymentDeadlineMail`
+(`emails.payment-deadline`), which covers all five stages.
 
 The scheduler also runs `sanctum:prune-expired --hours=24` and `model:prune` daily.
 **None of this fires unless `schedule:run` is in cron and a queue worker is running**
@@ -376,7 +455,7 @@ they were centralised there deliberately. Admins read the trail via
 
 ## Testing
 
-329 tests, 827 assertions, ~11 seconds on in-memory SQLite. 27 feature tests, 7 unit tests.
+398 tests, 972 assertions, ~14 seconds on in-memory SQLite. 31 feature tests, 7 unit tests.
 
 Benchmarks are marked with the `#[Group('benchmark')]` **attribute** — PHPUnit 12 ignores
 the old `@group` docblock — and are excluded in `phpunit.xml`. Run them deliberately with
@@ -385,7 +464,10 @@ the old `@group` docblock — and are excluded in `phpunit.xml`. Run them delibe
 Notable guards worth keeping green: `QueryBudgetTest` (N+1 regressions),
 `ConfigCachingTest` (ETag/304 behaviour), `InvoiceMetadataExposureTest` (list must not leak
 metadata), `RevenueByServiceCorrectnessTest` + `RevenueAggregationBenchmarkTest` (the SQL
-aggregate), `OrderStatusTimestampsTest`, `SendPaymentRemindersTest`.
+aggregate), `OrderStatusTimestampsTest`, `SendPaymentRemindersTest`, and the spec-4 set:
+`PaymentDeadlineTest`, `PaymentOverdueHoldTest` (which asserts `payment_overdue` survives a
+round trip through SQLite's CHECK constraint, and that an overdue invoice stays `pending`
+for the webhook), `LateFeeAccrualTest`, `DeadlineExtensionTest`.
 
 ## Key Invariants
 
@@ -410,6 +492,15 @@ aggregate), `OrderStatusTimestampsTest`, `SendPaymentRemindersTest`.
   `buyer_code`; when `false` it requires `bid_price`. The frontend hides the bidding
   section entirely for `already_purchased` orders.
 - **Refund status is not invoice status** — a refunded invoice stays `paid`.
+- **An overdue invoice stays `pending`.** Overdue lives on `invoices.overdue_at` and on the
+  order, never on `invoices.status`. `WebhookController` locks on
+  `where('status', 'pending')`, so adding an `overdue` invoice status would make every
+  payment landing after a deadline silently fail to register.
+- **`payment_overdue` is not a pipeline stage** — read `Order::effectiveStatus()` for any
+  policy decision, and never let an admin set the status directly.
+- **Late fees recompute, never increment** — that is what makes the sweep safe to re-run.
+- **Late fee terms are frozen at issuance** — never re-price an issued invoice from the
+  live settings.
 - **`port_condition` is not `condition`** — the billable amount is the difference between
   the two disclosure fees.
 
@@ -426,4 +517,5 @@ Changes that must be made in both repositories at once:
 | New `OrderStatus` case | The 6 places listed under **Order Lifecycle** |
 | New or removed port | `config/freight.php` (×3 arrays), the enum, the Form Request, and `src/lib/freight.ts` |
 | `RefundService::ALLOWED` transitions | `refund-section.component.tsx` |
+| Shipment-hold or deadline fields | `order.types.ts` / `invoice.types.ts`, and the timelines that read `effective_status` |
 | Any new enum exposed via `/config` | The matching Form Request validation |

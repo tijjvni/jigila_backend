@@ -7,7 +7,9 @@ use App\Models\Invoice;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\InvoiceService;
+use App\Services\LateFeeService;
 use App\Services\NotificationService;
+use App\Services\PaymentDeadlineService;
 use App\Services\PaystackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -22,7 +24,15 @@ class InvoiceServiceTest extends TestCase
     {
         $paystack ??= $this->mockPaystack();
 
-        return new InvoiceService($paystack, new NotificationService);
+        $notifications = new NotificationService;
+        $lateFees      = new LateFeeService;
+
+        return new InvoiceService(
+            $paystack,
+            $notifications,
+            new PaymentDeadlineService($notifications, $lateFees),
+            $lateFees,
+        );
     }
 
     private function mockPaystack(bool $succeed = true): PaystackService
