@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\DeadlineExtensionStatus;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,6 +38,39 @@ class InvoiceResource extends JsonResource
             'status'         => $this->status,
             'due_date'       => $this->due_date?->toDateString(),
             'paid_at'        => $this->paid_at,
+
+            // Payment deadline and late fees (spec 4). `status` stays `pending`
+            // when a deadline lapses — the overdue state lives here and on the
+            // order, because the Paystack webhook matches pending invoices.
+            'payment_due_at'   => $this->payment_due_at,
+            'deadline_hours'   => $this->deadline_hours,
+            'overdue_at'       => $this->overdue_at,
+            'is_overdue'       => $this->isOverdue(),
+            // Server-derived so the client renders a countdown without
+            // re-deriving the policy; negative once the deadline has passed.
+            'hours_until_due'  => $this->hoursUntilDue(),
+            'late_fee_amount'  => $this->late_fee_amount,
+            'late_fee_days'    => $this->late_fee_days,
+            'late_fee_mode'    => $this->late_fee_mode,
+            'late_fee_rate'    => $this->late_fee_rate,
+            // Invoice plus any fee accrued. The fee is billed as its own
+            // `late_fee` invoice, so this is a display total, not one payable.
+            'total_due'        => $this->totalDue(),
+
+            // One-time deadline extension
+            'extension_status'          => $this->extension_status,
+            'extension_requested_hours' => $this->extension_requested_hours,
+            'extension_granted_hours'   => $this->extension_granted_hours,
+            'extension_reason'          => $this->extension_reason,
+            'extension_requested_at'    => $this->extension_requested_at,
+            'extension_reviewed_at'     => $this->extension_reviewed_at,
+            'original_payment_due_at'   => $this->original_payment_due_at,
+            // Lets the client show or hide the "request more time" button
+            // without re-deriving the one-time rule.
+            'can_request_extension'     => $this->status === 'pending'
+                && $this->payment_due_at !== null
+                && $this->extension_status !== DeadlineExtensionStatus::Approved
+                && $this->extension_status !== DeadlineExtensionStatus::Requested,
 
             // Refund processing (BUG-055). `status` stays `paid` throughout —
             // a refund is a separate axis so payment history is never rewritten.

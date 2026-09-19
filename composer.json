@@ -49,6 +49,22 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "lint": [
+            "vendor/bin/pint --test"
+        ],
+        "fix": [
+            "vendor/bin/pint"
+        ],
+        "audit:security": [
+            "@composer audit"
+        ],
+        "@comment": "check does not delegate to @test: Composer only substitutes @no_additional_args for a directly-invoked script, so chaining it passes the literal token to config:clear.",
+        "check": [
+            "vendor/bin/pint --test",
+            "@php artisan config:clear --ansi",
+            "@php artisan test",
+            "@composer audit"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

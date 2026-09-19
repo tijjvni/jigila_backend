@@ -80,6 +80,10 @@ Route::prefix('v1')->group(function () {
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::post('invoices/{invoice}/refund-request', [InvoiceController::class, 'requestRefund'])
             ->middleware('throttle:10,1');
+        // One-time payment deadline extension; admin approval required before
+        // the deadline actually moves (spec 4).
+        Route::post('invoices/{invoice}/extension-request', [InvoiceController::class, 'requestExtension'])
+            ->middleware('throttle:5,1');
 
         // Notifications
         Route::get('notifications', [NotificationController::class, 'index']);
@@ -114,6 +118,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('orders/{order}/location', [AdminOrderController::class, 'updateLocation']);
                 Route::patch('orders/{order}/shipping', [AdminOrderController::class, 'updateShipping']);
                 Route::post('orders/{order}/cancel', [AdminOrderController::class, 'cancel']);
+                Route::post('orders/{order}/release-hold', [AdminOrderController::class, 'releaseHold']);
 
                 // Document upload/delete — admins only
                 Route::post('orders/{order}/documents', [OrderDocumentController::class, 'store']);
@@ -130,6 +135,11 @@ Route::prefix('v1')->group(function () {
             Route::middleware('permission:invoices.manage')->group(function () {
                 Route::post('orders/{order}/invoices', [AdminInvoiceController::class, 'store']);
                 Route::patch('invoices/{invoice}/refund', [AdminInvoiceController::class, 'updateRefund']);
+
+                // Payment deadlines and late fees (spec 4)
+                Route::patch('invoices/{invoice}/deadline', [AdminInvoiceController::class, 'updateDeadline']);
+                Route::patch('invoices/{invoice}/extension', [AdminInvoiceController::class, 'reviewExtension']);
+                Route::post('invoices/{invoice}/late-fee-invoice', [AdminInvoiceController::class, 'issueLateFee']);
             });
 
             // Users — read

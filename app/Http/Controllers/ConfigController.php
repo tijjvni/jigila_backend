@@ -31,7 +31,7 @@ class ConfigController extends Controller
 
             'order_statuses' => self::toOptions(
                 OrderStatus::values(),
-                ['Pending', 'Processing', 'Pickup', 'In Transit', 'At Port', 'On Vessel', 'Delivered', 'Cancelled']
+                ['Pending', 'Processing', 'Pickup', 'In Transit', 'At Port', 'On Vessel', 'Delivered', 'Cancelled', 'Payment Overdue']
             ),
 
             'auction_sources' => self::toOptions(AuctionSource::values(), ['Copart', 'IAAI']),

@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\DeadlineExtensionStatus;
 use App\Enums\DocumentType;
 use App\Enums\RefundStatus;
 use App\Mail\CredentialsMail;
 use App\Mail\ForgotPasswordMail;
 use App\Mail\InvoiceCreatedMail;
+use App\Mail\PaymentDeadlineMail;
 use App\Mail\TicketCreatedMail;
 use App\Mail\TicketReplyMail;
 use App\Mail\WelcomeMail;
@@ -182,25 +184,151 @@ class NotificationService
     }
 
     /**
-     * Hour-based reminder for an invoice that is still unpaid (BUG-033).
+     * Deadline-anchored payment reminder (spec 4).
+     *
+     * `$stage` is `48`, `24`, `6` (hours remaining) or `expiry`.
      */
-    public function sendPaymentReminder(Invoice $invoice): void
+    public function sendPaymentDeadlineReminder(Invoice $invoice, string $stage): void
+    {
+        $invoice->loadMissing('user');
+
+        [$title, $body] = $stage === 'expiry'
+            ? [
+                'Payment Deadline Reached',
+                "The payment deadline for invoice {$invoice->invoice_number} (\${$invoice->amount}) has been reached. Pay now to avoid a hold on your shipment.",
+            ]
+            : [
+                "Payment Due in {$stage} Hours",
+                "Invoice {$invoice->invoice_number} for \${$invoice->amount} is due in {$stage} hours. Please complete payment to keep your shipment on schedule.",
+            ];
+
+        $this->createInApp(
+            $invoice->user,
+            'payment_reminder',
+            $title,
+            $body,
+            [
+                'invoice_id'     => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'amount'         => $invoice->amount,
+                'stage'          => $stage,
+                'payment_due_at' => $invoice->payment_due_at?->toIso8601String(),
+            ],
+        );
+
+        try {
+            Mail::to($invoice->user->email)->queue(new PaymentDeadlineMail($invoice, $stage));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send payment reminder email', ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Deadline lapsed — the shipment is now on hold (spec 4).
+     */
+    public function notifyPaymentOverdue(Invoice $invoice): void
+    {
+        $invoice->loadMissing(['user', 'order']);
+
+        $fee = (float) $invoice->late_fee_amount > 0
+            ? " A late fee of \${$invoice->late_fee_amount} has been applied."
+            : '';
+
+        $this->createInApp(
+            $invoice->user,
+            'payment_overdue',
+            'Payment Overdue',
+            "The payment deadline for invoice {$invoice->invoice_number} has passed and a hold has been placed on your shipment.{$fee} Pay now to release it.",
+            [
+                'invoice_id'      => $invoice->id,
+                'invoice_number'  => $invoice->invoice_number,
+                'order_id'        => $invoice->order_id,
+                'late_fee_amount' => $invoice->late_fee_amount,
+            ],
+        );
+
+        try {
+            Mail::to($invoice->user->email)->queue(new PaymentDeadlineMail($invoice, 'overdue'));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send payment overdue email', ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]);
+        }
+
+        $this->notifyAdmins(
+            'payment_overdue',
+            'Invoice Overdue',
+            "Invoice {$invoice->invoice_number} ({$invoice->user->name}) passed its payment deadline. The shipment is on hold.",
+            ['invoice_id' => $invoice->id, 'order_id' => $invoice->order_id],
+        );
+    }
+
+    /**
+     * The hold came off — payment landed, an extension was granted, or an admin
+     * released it by hand (spec 4).
+     */
+    public function notifyShipmentHoldReleased(Order $order, string $reason): void
+    {
+        $order->loadMissing('user');
+
+        $because = match ($reason) {
+            'payment_received'  => 'your payment has been received',
+            'deadline_extended' => 'your deadline extension was approved',
+            'deadline_moved'    => 'your payment deadline has been moved',
+            default             => 'the hold has been lifted by our team',
+        };
+
+        $this->createInApp(
+            $order->user,
+            'shipment_hold_released',
+            'Shipment Hold Lifted',
+            "The hold on your order for VIN {$order->vin} has been lifted because {$because}. Your shipment is moving again.",
+            ['order_id' => $order->id, 'reason' => $reason],
+        );
+    }
+
+    /**
+     * Outcome of a one-time deadline extension request (spec 4).
+     */
+    public function notifyExtensionReviewed(Invoice $invoice, DeadlineExtensionStatus $status): void
+    {
+        $invoice->loadMissing('user');
+
+        $body = $status === DeadlineExtensionStatus::Approved
+            ? "Your deadline extension on invoice {$invoice->invoice_number} was approved. You now have until "
+                . $invoice->payment_due_at?->format('M d, Y H:i') . ' UTC to pay.'
+            : "Your deadline extension request on invoice {$invoice->invoice_number} was not approved. The original deadline stands — contact support if you need to discuss it.";
+
+        $this->createInApp(
+            $invoice->user,
+            'deadline_extension_' . $status->value,
+            DeadlineExtensionStatus::labels()[$status->value],
+            $body,
+            [
+                'invoice_id'     => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'payment_due_at' => $invoice->payment_due_at?->toIso8601String(),
+            ],
+        );
+    }
+
+    /**
+     * An admin moved a payment deadline directly (spec 4).
+     */
+    public function notifyDeadlineChanged(Invoice $invoice): void
     {
         $invoice->loadMissing('user');
 
         $this->createInApp(
             $invoice->user,
-            'payment_reminder',
-            'Payment Reminder',
-            "Invoice {$invoice->invoice_number} for \${$invoice->amount} is still outstanding. Please complete payment to keep your shipment on schedule.",
-            ['invoice_id' => $invoice->id, 'invoice_number' => $invoice->invoice_number, 'amount' => $invoice->amount],
+            'payment_deadline_updated',
+            'Payment Deadline Updated',
+            "The payment deadline for invoice {$invoice->invoice_number} is now "
+                . $invoice->payment_due_at?->format('M d, Y H:i') . ' UTC.',
+            [
+                'invoice_id'     => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'payment_due_at' => $invoice->payment_due_at?->toIso8601String(),
+            ],
         );
-
-        try {
-            Mail::to($invoice->user->email)->queue(new InvoiceCreatedMail($invoice));
-        } catch (\Throwable $e) {
-            Log::error('Failed to send payment reminder email', ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]);
-        }
     }
 
     public function notifyAdmins(string $type, string $title, string $body, array $data = []): void
